@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b8def">
+<meta name="format-detection" content="telephone=no,email=no,address=no">
+<meta name="apple-mobile-web-app-title" content="存钱大作战">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>🎮 Switch 存钱大作战</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+  html { height:100%; -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  body {
+    min-height:100%;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#f0f4f8; color:#333;
+    display:flex; flex-direction:column;
+    max-width:760px; margin:0 auto;
+    /* iPad / iPhone：禁长按选中、禁双击放大、禁橡皮筋回弹 */
+    -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;
+    overscroll-behavior-y:none;
+  }
+  input, textarea { -webkit-user-select:text; user-select:text; font-size:16px; }
+  [onclick] { cursor:pointer; }   /* iOS 上可点区域需要 pointer 才稳定触发 click */
+  header {
+    background:linear-gradient(135deg,#5b8def,#7c6cf0);
+    color:#fff; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:10;
+    padding-left:calc(16px + env(safe-area-inset-left));
+    padding-right:calc(16px + env(safe-area-inset-right));
+  }
+  header h1 { font-size:19px; }
+  header .date { font-size:12px; opacity:.85; margin-top:2px; }
+  header button {
+    background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.5);
+    color:#fff; font-size:14px; padding:8px 12px; border-radius:10px;
+    min-height:44px;   /* iPad 触控最小热区 */
+  }
+  main { flex:1; padding:14px 14px 90px; padding:14px 14px calc(90px + env(safe-area-inset-bottom)); }
+  .tab { display:none; }
+  .tab.active { display:block; animation:fade .25s; }
+  @keyframes fade { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+  nav {
+    position:fixed; bottom:0; left:0; right:0; z-index:10;
+    display:flex; max-width:760px; margin:0 auto;
+    background:#fff; box-shadow:0 -2px 12px rgba(0,0,0,.08);
+    padding-bottom:env(safe-area-inset-bottom);   /* iPad/iPhone 底部安全区 */
+  }
+  nav button {
+    flex:1; border:none; background:none; padding:9px 0 10px;
+    display:flex; flex-direction:column; align-items:center; gap:2px;
+    font-size:11px; color:#8a97a6; cursor:pointer;
+  }
+  nav button .n-e { font-size:22px; line-height:1.1; }
+  nav button.active { color:#5b8def; font-weight:bold; }
+
+  .card {
+    background:#fff; border-radius:16px; padding:14px; margin-bottom:14px;
+    box-shadow:0 1px 6px rgba(30,60,100,.08);
+  }
+  .card h2 { font-size:16px; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+  .sub { font-size:12px; color:#8a97a6; margin:-8px 0 10px; line-height:1.6; }
+  .daytip { background:#fff8ea; border:2px dashed #f39c12; border-radius:12px; padding:9px 12px; font-size:13px; color:#a06a00; margin-bottom:12px; line-height:1.6; }
+  .toast {
+    position:fixed; top:70px; left:50%; transform:translateX(-50%);
+    background:rgba(40,60,90,.92); color:#fff; padding:10px 20px; border-radius:24px;
+    font-size:15px; z-index:99; opacity:0; transition:opacity .3s; pointer-events:none;
+    max-width:86%; text-align:center;
+  }
+  .toast.show { opacity:1; }
+  .egg-float { position:fixed; right:16px; bottom:78px; bottom:calc(78px + env(safe-area-inset-bottom)); font-size:36px; cursor:pointer; z-index:30; animation:bounce 1.2s infinite; filter:drop-shadow(0 3px 4px rgba(0,0,0,.25)); }
+
+  /* ---------- 流程 ---------- */
+  .steps { display:grid; grid-template-columns:repeat(auto-fill,minmax(96px,1fr)); gap:10px; }
+  .step {
+    border:2.5px solid #d7e0ec; border-radius:14px; text-align:center;
+    padding:12px 4px; cursor:pointer; position:relative; background:#fbfdff;
+    transition:transform .1s;
+  }
+  .step:active { transform:scale(.95); }
+  .step .e { font-size:34px; line-height:1.2; }
+  .step .t { font-size:14.5px; font-weight:bold; margin-top:4px; }
+  .step .p { font-size:10.5px; color:#9aa8b8; margin-top:2px; }
+  .step.done { border-color:#2ecc71; background:#effaf3; }
+  .step.done .t { color:#1e8449; }
+  .step .tick { position:absolute; top:-8px; right:-6px; font-size:20px; }
+  /* 轨道小火车 */
+  .track { position:relative; height:30px; background:#d7e0ec; border-radius:15px; margin-top:14px; }
+  .track-fill { position:absolute; left:0; top:0; bottom:0; width:0; border-radius:15px; background:repeating-linear-gradient(45deg,#ffe3a3,#ffe3a3 8px,#ffd98a 8px,#ffd98a 16px); transition:width .4s; }
+  .track-train { position:absolute; top:-9px; left:0; font-size:26px; transition:left .4s; filter:drop-shadow(0 2px 2px rgba(0,0,0,.2)); z-index:2; }
+  .track-stations { position:absolute; left:0; right:0; top:0; bottom:0; display:flex; justify-content:space-around; align-items:center; }
+  .station { width:10px; height:10px; background:#fff; border:2px solid #9aa8b8; border-radius:50%; }
+  .station.done { background:#2ecc71; border-color:#1e8449; }
+
+  /* ---------- 任务 ---------- */
+  .tasks { display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:10px; }
+  .task {
+    border:2.5px dashed #cbd6e4; border-radius:14px; text-align:center;
+    padding:14px 4px; cursor:pointer; background:#fbfdff; transition:transform .1s;
+  }
+  .task:active { transform:scale(.95); }
+  .task .e { font-size:32px; }
+  .task .t { font-size:14px; font-weight:bold; margin-top:4px; }
+  .task.sel { border-style:solid; border-color:#f39c12; background:#fff8ea; }
+  .task .tag { display:inline-block; margin-top:6px; font-size:10.5px; background:#f39c12; color:#fff; border-radius:8px; padding:2px 8px; }
+  .task .p2 { font-size:10.5px; color:#9aa8b8; margin-top:2px; }
+  .task.ok { border-style:solid; border-color:#2ecc71; background:#effaf3; }
+  .badge { display:inline-block; margin-top:6px; font-size:10.5px; background:#2ecc71; color:#fff; border-radius:8px; padding:2px 8px; font-weight:bold; }
+  .cat-title { font-size:13.5px; font-weight:bold; color:#5a6b7d; margin:12px 2px 8px; }
+  .rate-box { background:#fff; border:2.5px solid #5b8def; border-radius:14px; padding:12px; margin-top:12px; }
+  .rate-t { font-size:14.5px; font-weight:bold; margin-bottom:6px; }
+  .plist { display:flex; flex-direction:column; gap:8px; }
+  .pitem { display:flex; align-items:center; gap:8px; border:2px solid #d7e0ec; border-radius:12px; padding:10px 12px; cursor:pointer; background:#fbfdff; }
+  .pitem.on { border-color:#5b8def; background:#eef4fd; }
+  .pi-e { font-size:20px; }
+  .pi-t { font-size:14.5px; font-weight:bold; }
+  .pi-d { flex:1; font-size:11.5px; color:#8a97a6; }
+  .pi-s { font-size:13px; font-weight:bold; color:#2471a3; white-space:nowrap; }
+  .progress-wrap { height:14px; background:#e3eaf3; border-radius:7px; overflow:hidden; margin-bottom:8px; }
+  .progress-fill { height:100%; background:linear-gradient(90deg,#f39c12,#f1c40f); width:0; transition:width .3s; border-radius:7px; }
+  .score-line { font-size:15px; }
+  .score-line b { font-size:22px; color:#c76b00; }
+  .score-detail { font-size:12px; color:#8a97a6; margin-top:4px; }
+  .goal-in { width:96px; border:2px solid #d7e0ec; border-radius:10px; padding:8px; font-size:16px; text-align:center; }
+  /* ---- 游戏化 ---- */
+  .hero-bar { display:flex; align-items:center; gap:10px; background:linear-gradient(135deg,#fff6e5,#ffeef5); border:2px solid #ffd591; border-radius:14px; padding:10px 12px; margin-bottom:12px; }
+  .hero-lv { font-size:24px; }
+  .hero-mid { flex:1; min-width:0; }
+  .hero-t { font-size:14px; font-weight:bold; color:#a06a00; }
+  .hero-p { height:8px; background:#ffe3b8; border-radius:4px; overflow:hidden; margin-top:4px; }
+  .hero-pf { height:100%; background:linear-gradient(90deg,#f39c12,#f1c40f); border-radius:4px; }
+  .hero-s { font-size:11px; color:#b8860b; margin-top:3px; }
+  .hero-fire { font-size:12.5px; font-weight:bold; color:#e67e22; white-space:nowrap; }
+  .rate-opts { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:8px 0; }
+  .rate-opt { border:2.5px solid #d7e0ec; border-radius:14px; text-align:center; padding:10px 4px; cursor:pointer; background:#fbfdff; }
+  .rate-opt .ro-e { font-size:26px; }
+  .rate-opt .ro-t { font-size:12.5px; font-weight:bold; margin-top:2px; }
+  .rate-opt .ro-s { font-size:11px; color:#2471a3; margin-top:2px; font-weight:bold; }
+  .rate-opt.sel { border-color:#f39c12; background:#fff8ea; }
+  .gift-box { text-align:center; background:#fff0f7; border:2.5px dashed #e84393; border-radius:16px; padding:16px; margin-top:12px; cursor:pointer; animation:bounce 1s infinite; }
+  .gift-box .g-e { font-size:44px; }
+  .gift-box .g-t { font-size:14.5px; font-weight:bold; color:#c2185b; margin-top:4px; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+  .rec-tag { display:inline-block; margin-top:6px; font-size:10.5px; background:#5b8def; color:#fff; border-radius:8px; padding:2px 8px; }
+  .celebrate { position:fixed; inset:0; background:rgba(20,30,50,.75); z-index:200; display:none; align-items:center; justify-content:center; }
+  .celebrate.show { display:flex; }
+  .celebrate .c-box { text-align:center; color:#fff; animation:zoomin .5s; }
+  .celebrate .c-e { font-size:70px; display:inline-block; animation:spin 1.2s; }
+  .celebrate .c-t { font-size:22px; font-weight:bold; margin-top:8px; }
+  .celebrate .c-s { font-size:14px; opacity:.85; margin-top:6px; }
+  @keyframes zoomin { from{transform:scale(.3);opacity:0} to{transform:scale(1);opacity:1} }
+  @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+  .sticker-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); gap:10px; }
+  .sticker {
+    position:relative; text-align:center; background:#fbfdff; border:2px solid #e3eaf3; border-radius:12px;
+    padding:10px 4px 8px; min-height:80px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    overflow:hidden;
+  }
+  .sticker .s-e { font-size:26px; line-height:1.2; }
+  .sticker .s-n { font-size:10.5px; color:#8a97a6; line-height:1.35; max-width:100%; overflow:hidden; }
+  .sticker.off { opacity:.35; filter:grayscale(1); }
+  .sticker.sel { border:3px solid #5b8def; background:#eef4fd; box-shadow:0 0 0 3px rgba(91,141,239,.15); }
+  .st-sel { position:absolute; top:2px; left:2px; font-size:10px; background:#5b8def; color:#fff; border-radius:6px; padding:1px 4px; font-weight:bold; }
+  .st-rev { position:absolute; top:2px; right:2px; font-size:11px; background:#eef4fd; border-radius:6px; padding:1px 4px; }
+  .st-rev:active { transform:scale(.9); }
+  .bank-chip { position:relative; text-align:center; background:#fff; border:2px solid #e3eaf3; border-radius:12px; padding:8px 2px; cursor:pointer; }
+  .bank-chip:active { transform:scale(.95); }
+  .bank-chip .zi { font-family:"Kaiti SC","KaiTi","楷体","STKaiti",serif; font-size:22px; font-weight:bold; line-height:1.2; }
+  .bank-chip .ci { font-size:10px; color:#8a97a6; margin-top:2px; }
+  .bank-chip.in { opacity:.4; }
+  .bank-chip.in::after { content:'✓'; position:absolute; top:2px; right:5px; color:#2ecc71; font-weight:bold; }
+  .pk-line { font-size:13px; margin-top:8px; background:#f2f9ff; border-radius:10px; padding:8px 10px; color:#2471a3; font-weight:bold; }
+  .done-banner {
+    text-align:center; background:#effaf3; border:2.5px solid #2ecc71; border-radius:14px;
+    padding:12px; font-size:16px; font-weight:bold; color:#1e8449;
+  }
+  .btn {
+    display:block; width:100%; border:none; border-radius:14px; padding:14px;
+    font-size:16.5px; font-weight:bold; cursor:pointer; margin-top:12px;
+  }
+  .btn-green { background:linear-gradient(135deg,#2ecc71,#27ae60); color:#fff; }
+  .btn-blue { background:linear-gradient(135deg,#5b8def,#4098e8); color:#fff; }
+  .btn-gray { background:#e3e9f2; color:#5a6b7d; }
+  .btn:disabled { opacity:.45; }
+
+  /* ---------- 识字墙 ---------- */
+  .zone {
+    border:2.5px solid; border-radius:16px; padding:10px; margin-bottom:12px;
+  }
+  .zone-new { border-color:#e67e22; background:#fff8ef; }
+  .zone-old { border-color:#27ae60; background:#eefaf1; }
+  .zone h3 { font-size:15px; margin-bottom:2px; }
+  .zone .zs { font-size:11.5px; color:#999; margin-bottom:8px; }
+  .char-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(64px,1fr)); gap:8px; }
+  .char-card {
+    background:#fff; border-radius:12px; text-align:center; padding:8px 2px 6px;
+    cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.08); transition:transform .1s;
+  }
+  .char-card:active { transform:scale(.93); }
+  .char-card .em { font-size:15px; line-height:1.2; }
+  .char-card .money { font-size:10px; font-weight:bold; color:#c76b00; background:#fff3dd; border-radius:6px; padding:0 5px; display:inline-block; }
+  .char-card .ld { font-size:9px; color:#98a6b5; margin-top:1px; }
+  .char-card .zi { font-family:"Kaiti SC","KaiTi","楷体","STKaiti",serif; font-size:30px; font-weight:bold; line-height:1.15; }
+  .char-card .py { font-size:11px; color:#e67e22; }
+  .char-card .ci { font-size:10.5px; color:#9aa8b8; }
+  .empty-tip { font-size:12.5px; color:#b8c4d2; text-align:center; padding:14px 0; }
+  .add-form { display:flex; gap:8px; margin-bottom:12px; }
+  .add-form input {
+    flex:1; min-width:0; border:2px solid #d7e0ec; border-radius:10px;
+    padding:10px 6px; font-size:16px; text-align:center; background:#fff;
+  }
+  .add-form input::placeholder { font-size:12px; color:#c3cedd; }
+  .add-form button {
+    border:none; background:#5b8def; color:#fff; border-radius:10px;
+    padding:0 16px; font-size:14.5px; font-weight:bold; cursor:pointer;
+  }
+  .add-form .add-btn {
+    flex:100%; margin-top:8px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,#27ae60,#2ecc71);
+    color:#fff; font-size:16px; font-weight:bold; letter-spacing:2px;
+    padding:13px 16px; border-radius:14px;
+    box-shadow:0 3px 10px rgba(46,204,113,.35);
+    transition:transform .1s;
+  }
+  .add-form .add-btn:active { transform:scale(.97); box-shadow:0 1px 4px rgba(46,204,113,.3); }
+  .stat-bar { background:#fffbe6; border:2.5px solid #f1c40f; border-radius:12px; padding:10px 14px; font-size:14px; margin-bottom:12px; }
+  .stat-bar b { font-size:17px; color:#c79100; }
+
+  /* ---------- 口算 ---------- */
+  .timer-show {
+    text-align:center; background:#1e2d45; color:#fff; border-radius:16px; padding:18px 10px 14px; margin-bottom:12px;
+  }
+  .timer-show .t { font-size:52px; font-weight:bold; font-family:Consolas,monospace; letter-spacing:2px; }
+  .timer-show .l { font-size:12.5px; opacity:.75; margin-top:2px; }
+  .chips { display:flex; gap:8px; justify-content:center; margin-bottom:12px; }
+  .chip {
+    border:2px solid #d7e0ec; background:#fff; border-radius:20px; padding:8px 18px;
+    font-size:14.5px; font-weight:bold; color:#5a6b7d; cursor:pointer;
+  }
+  .chip.sel { border-color:#5b8def; color:#5b8def; background:#eef4fd; }
+  .math-form { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .math-form label { font-size:13px; color:#5a6b7d; }
+  .math-form input {
+    width:100%; border:2px solid #d7e0ec; border-radius:10px; padding:10px;
+    font-size:17px; text-align:center; margin-top:4px;
+  }
+  .stars-pick { display:flex; justify-content:center; gap:14px; margin:10px 0 2px; }
+  .stars-pick span { font-size:34px; cursor:pointer; filter:grayscale(1); transition:transform .1s; }
+  .stars-pick span.on { filter:none; }
+  .rec { display:flex; justify-content:space-between; align-items:center; padding:9px 4px; border-bottom:1px dashed #e0e8f2; font-size:13.5px; }
+  .rec:last-child { border-bottom:none; }
+  .rec .d { color:#8a97a6; }
+  .rec .s { font-weight:bold; font-size:16px; color:#2471a3; }
+  .best { text-align:center; background:#fffbe6; border:2.5px dashed #f1c40f; border-radius:12px; padding:10px; font-size:14.5px; color:#7a5a00; margin-bottom:12px; }
+
+  /* ---------- 口算挑战 ---------- */
+  .mq-q { text-align:center; font-size:54px; font-weight:bold; font-family:Consolas,monospace; background:#1e2d45; color:#fff; border-radius:16px; padding:20px 8px; margin-bottom:12px; }
+  .mq-prog { text-align:center; font-size:13px; color:#5a6b7d; margin-bottom:8px; line-height:1.7; }
+  .mq-opts { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .mq-opt { border:2.5px solid #d7e0ec; background:#fbfdff; border-radius:14px; font-size:32px; font-weight:bold; padding:16px 0; cursor:pointer; text-align:center; }
+  .mq-opt:active { transform:scale(.95); }
+  .mq-opt.ok { border-color:#2ecc71; background:#effaf3; color:#1e8449; }
+  .mq-opt.no { border-color:#e74c3c; background:#fdf3f2; color:#c0392b; }
+
+  /* ---------- 英语口语 ---------- */
+  .eng-line { display:flex; align-items:center; gap:8px; padding:9px 4px; border-bottom:1px dashed #d7e6f5; }
+  .eng-line:last-child { border-bottom:none; }
+  .eng-who { font-size:12px; font-weight:bold; white-space:nowrap; color:#5a6b7d; width:66px; }
+  .eng-txt { flex:1; font-size:15px; font-weight:bold; line-height:1.5; }
+  .eng-spk { font-size:18px; cursor:pointer; padding:4px 9px; background:#eef4fd; border-radius:9px; }
+  .eng-spk:active { transform:scale(.9); }
+
+  /* ---------- 周目标 ---------- */
+  .w-chars { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .w-chars input {
+    width:100%; aspect-ratio:1/1; min-width:0; border:2.5px dashed #9ec5e4; border-radius:12px;
+    text-align:center; font-size:26px; font-family:"Kaiti SC","KaiTi","楷体",serif; font-weight:bold; background:#f7fbff;
+  }
+  .w-todo { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed #e0e8f2; }
+  .w-todo .box {
+    width:24px; height:24px; border:2.5px solid #5dade2; border-radius:7px; flex:none;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; color:#fff;
+  }
+  .w-todo .box.on { background:#2ecc71; border-color:#2ecc71; }
+  .w-todo input {
+    flex:1; min-width:0; border:none; font-size:16px; padding:6px 2px; background:none; outline:none;
+  }
+  .w-stars { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-top:6px; }
+  .w-star { text-align:center; cursor:pointer; }
+  .w-star .dn { font-size:11.5px; color:#8a97a6; }
+  .w-star .dot {
+    margin:4px auto 0; width:38px; height:38px; border-radius:50%;
+    border:2px dashed #9ec5e4; display:flex; align-items:center; justify-content:center;
+    font-size:17px; font-weight:bold; color:#9ec5e4;
+  }
+  .w-star .dot.on { border-style:solid; border-color:#f39c12; background:#fff3dd; color:#c76b00; }
+  input.deal {
+    width:100%; border:2px dashed #a9dfbf; border-radius:12px; padding:11px; font-size:16px; background:#f6fcf8;
+  }
+
+  /* ---------- 家长弹窗 ---------- */
+  .modal-mask {
+    position:fixed; inset:0; background:rgba(20,30,50,.5); z-index:50;
+    display:none; align-items:flex-start; justify-content:center; padding:20px 12px;
+  }
+  .modal-mask.show { display:flex; }
+  .modal {
+    background:#fff; border-radius:18px; width:100%; max-width:620px;
+    max-height:86vh; overflow-y:auto; padding:18px 16px;
+    -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  }
+  .modal h2 { font-size:17px; margin-bottom:10px; }
+  .modal h3 { font-size:14.5px; margin:12px 0 5px; }
+  .modal .x { float:right; border:none; background:#eef2f8; border-radius:50%; width:40px; height:40px; font-size:17px; cursor:pointer; }
+  .modal table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .modal td { border:1px solid #e3e9f2; padding:6px 7px; line-height:1.5; }
+  .modal td.no { background:#fdf3f2; color:#9b4a42; width:44%; }
+  .modal td.yes { background:#f4fdf8; color:#1e6b40; font-weight:bold; }
+  .modal p { font-size:13px; line-height:1.75; color:#4a5a6b; }
+  .modal textarea {
+    width:100%; height:90px; font-size:16px; border:1px solid #d7e0ec; border-radius:8px; padding:8px; margin:4px 0;
+  }
+
+  /* ---------- iPad / 大屏（竖屏 768 · 横屏 1024） ---------- */
+  @media (min-width: 740px) {
+    body { max-width: 900px; }
+    nav { max-width: 900px; }
+    header h1 { font-size: 21px; }
+    header .date { font-size: 13px; }
+    main { padding: 18px 18px calc(96px + env(safe-area-inset-bottom)); }
+    .card { padding: 18px; }
+    .steps { grid-template-columns: repeat(auto-fill, minmax(136px, 1fr)); gap: 14px; }
+    .tasks { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
+    .step { padding: 16px 6px; }
+    .task { padding: 18px 6px; }
+    .step .e, .task .e { font-size: 40px; }
+    .step .t, .task .t { font-size: 16.5px; }
+    .step .p, .task .p2 { font-size: 12px; }
+    .cat-title { font-size: 15px; }
+    .mq-q { font-size: 68px; padding: 26px 8px; }
+    .mq-opt { font-size: 40px; padding: 22px 0; }
+    .btn { font-size: 16.5px; padding: 15px; }
+    nav button { font-size: 12.5px; padding: 10px 0 11px; }
+    nav button .n-e { font-size: 25px; }
+    .hero-t { font-size: 15px; }
+    .hero-s { font-size: 12px; }
+    .pi-t { font-size: 15.5px; }
+    .pi-d { font-size: 12.5px; }
+  }
+  /* 只有带鼠标的设备才响应 hover（iPad 上避免"点一下留下高亮"） */
+  @media (hover: hover) {
+    .step:hover, .task:hover, .pitem:hover { background: #f2f8ff; }
+    nav button:hover { color: #5b8def; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🐷 Switch 存钱大作战</h1>
+    <div class="date" id="hDate"></div>
+  </div>
+  <button onclick="openParent()">📖 家长</button>
+</header>
+
+<main>
+  <!-- ============ 流程 ============ -->
+  <section id="tab-routine" class="tab active">
+    <div class="card" style="padding:10px 14px">
+      <h2 style="margin-bottom:6px">🐾 我的存钱伙伴</h2>
+      <div id="petBox"></div>
+    </div>
+    <div class="card">
+      <h2>🌙 今晚小火车</h2>
+      <div class="sub">每做完一件事点一下卡片，小火车往前开一站 🚂 全部开到终点有奖励！</div>
+      <div class="daytip" id="dayTip"></div>
+      <div class="hero-bar" id="trainLevelBar" style="margin-bottom:12px"></div>
+      <div class="steps" id="steps"></div>
+      <div class="track">
+        <div class="track-fill" id="trainFill"></div>
+        <div class="track-stations" id="trainStations"></div>
+        <div class="track-train" id="trainEmoji">🚂</div>
+      </div>
+      <div class="mq-prog" id="trainInfo" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <h2>🎲 今晚故事盲盒</h2>
+      <div class="sub">睡前故事环节用：摇一个主题，爸妈照着开场句往下编，让孩子加角色和转折 😄</div>
+      <div id="storyBox"></div>
+      <button class="btn btn-green" onclick="tellStory()">🎲 摇一个今晚的故事</button>
+    </div>
+    <div class="card">
+      <h2>😊 今天心情怎么样</h2>
+      <div class="sub">点一个代表今天心情的表情，每天记一次，爸妈都能看到</div>
+      <div class="chips" id="moodBox" style="justify-content:flex-start"></div>
+    </div>
+    <div class="card" style="padding:10px 14px">
+      <h2 style="margin-bottom:6px">🏆 成就墙 · <span id="achCount"></span></h2>
+      <div class="sticker-grid" id="achGrid"></div>
+    </div>
+  </section>
+
+  <!-- ============ 任务 ============ -->
+  <section id="tab-task" class="tab">
+    <div class="card">
+      <div id="heroBar"></div>
+      <div id="wageBar" style="margin-bottom:10px"></div>
+      <h2>✏️ 我的赚钱任务（12 项，点卡片开始）</h2>
+      <div class="sub">做完选评价入账。<b>做了几轮就叠几轮</b>：跳绳跳了 3 分钟 = 领 3 轮！每项每天最多 5 轮 · 每日工资（任务/口算/识字等）封顶 ¥40，<b>英语专项奖金独立另计</b> 🐷 带「⭐今日推荐」的每轮多赚 ¥1</div>
+      <div id="taskArea"></div>
+    </div>
+    <div class="card">
+      <h2>👨‍💻 家长打卡（给孩子做榜样）</h2>
+      <div class="sub">大人也在学习，就是最好的言传身教。点一下打卡，再点一下取消，赚的钱进同一个存钱罐</div>
+      <div id="parentArea"></div>
+    </div>
+    <div class="card">
+      <h2>🏷️ 我的贴纸册</h2>
+      <div class="sub">每完成一项任务，随机掉落一只小动物贴纸 —— 集齐 12 种！</div>
+      <div class="sticker-grid" id="stickerArea"></div>
+    </div>
+    <div class="card" style="padding:10px 14px">
+      <h2 style="margin-bottom:6px">📈 每日收入记录（最近 7 天）</h2>
+      <div id="dayEarnList"></div>
+    </div>
+  </section>
+
+  <!-- ============ 识字墙 ============ -->
+  <section id="tab-wall" class="tab">
+    <div class="stat-bar" id="wallStat"></div>
+    <div class="card">
+      <h2>➕ 添加新字</h2>
+      <div class="sub">推荐填法：<b>一个字 + 组词 + 记忆口诀</b>（怎么记住字形的一句话，复习时爸妈念）。例：山→「三座山峰连成山」· 大→「人张开手就是大」· 上→「一竖站在线上面」。孩子还不需要拼音，可不填；例句也是给爸妈念的。点字卡可听读音 🔊</div>
+      <div class="add-form" style="flex-wrap:wrap">
+        <input id="inZi" maxlength="1" placeholder="写一个字" style="flex:1">
+        <input id="inCi" maxlength="8" placeholder="组词(如:大山)" style="flex:1">
+        <input id="inTip" maxlength="30" placeholder="记忆口诀(如:三座山峰连成山)" style="flex:100%">
+        <input id="inJu" maxlength="30" placeholder="例句(可空,给爸妈念:我们爬过大山)" style="flex:100%">
+        <button onclick="addChar()" class="add-btn">🌱 添加到生字村</button>
+        <button class="add-btn" style="background:linear-gradient(135deg,#8e44ad,#a55eea); margin-top:8px" onclick="openBank()">📖 不知道教什么字？打开字库参考（一二三年级）</button>
+      </div>
+    </div>
+    <div class="card zone zone-new">
+      <h3>🌱 生字村</h3>
+      <div class="zs">新字朋友住这里，点字卡可以听它读音 🔊</div>
+      <div class="char-grid" id="gridNew"></div>
+    </div>
+    <div class="card zone zone-old">
+      <h3>🏆 熟字城</h3>
+      <div class="zs">识字规则：搬进来 = 会认 ¥1/字 · 点字卡认证「会写」再赚 ¥2/字 · 忘了搬回去也不扣钱</div>
+      <div class="char-grid" id="gridOld"></div>
+    </div>
+  </section>
+
+  <!-- ============ 口算 ============ -->
+  <section id="tab-math" class="tab">
+    <div class="card">
+      <h2>🔢 口算挑战（自动出题）</h2>
+      <div class="sub">10 道题连闯，点答案就行，自动计时自动发钱。不用买练习册啦～</div>
+      <div class="chips" id="mqChips">
+        <span class="chip sel" onclick="setMqDiff(this,10)">10 以内</span>
+        <span class="chip" onclick="setMqDiff(this,20)">20 以内进阶</span>
+      </div>
+      <div id="mqArea"></div>
+    </div>
+    <div class="card">
+      <h2>📅 今日汇总</h2>
+      <div id="mqToday"></div>
+    </div>
+    <div class="card">
+      <h2>🏆 最好成绩 · 📋 历史记录（最近 30 场）</h2>
+      <div class="best" id="tmBest" style="margin-bottom:10px"></div>
+      <div id="tmList"></div>
+    </div>
+  </section>
+
+  <!-- ============ 英语口语 ============ -->
+  <section id="tab-eng" class="tab">
+    <div id="engPage"></div>
+    <div class="card">
+      <h2>💡 怎么玩</h2>
+      <div class="sub">📌 每个场景 2~3 个句型 × 6 轮换词，练完一句才出下一句；¥5~6/场景，每天 2 个（专项奖金不占 ¥40 封顶）。<br>🎯 场景自己选：点图鉴图标直接开练，点 📖 只看内容；进阶 18 个需集齐基础 27 个解锁。<br>😊 点 🔊 听发音，说错了也发钱——敢开口最棒！</div>
+    </div>
+  </section>
+
+  <!-- ============ 周目标 ============ -->
+  <section id="tab-week" class="tab">
+    <div class="card" style="border:2.5px solid #e84393; background:#fff0f7;">
+      <h2>🐷 Switch 存钱罐（目标：过年前拿下！）</h2>
+      <div class="progress-wrap"><div class="progress-fill" id="swFill"></div></div>
+      <div class="score-line" id="swLine"></div>
+      <div class="pk-line" id="swPromise" style="background:#fff5e8; color:#a06a00;"></div>
+      <div class="score-detail" id="swEta"></div>
+      <canvas id="swChart" style="width:100%; height:150px; margin-top:6px;"></canvas>
+      <div style="display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;">
+        <span style="font-size:13px; color:#5a6b7d; white-space:nowrap;">我的存钱目标</span>
+        <input type="number" class="goal-in" id="swGoal" value="1000" inputmode="numeric" enterkeyhint="done" onchange="setSwGoal(this.value)">
+        <span style="font-size:13px; color:#5a6b7d; white-space:nowrap;">👨 爸爸补齐</span>
+        <input type="number" class="goal-in" id="ppGoal" value="1300" inputmode="numeric" enterkeyhint="done" onchange="setPromise(this.value)">
+        <span style="font-size:12px; color:#8a97a6;">元（两数相加 = Switch 价格，如 OLED ¥2300）</span>
+      </div>
+      <button class="btn btn-blue" onclick="openPay()">🧾 周日发薪日 · 领取本周工资单</button>
+    </div>
+    <div class="card">
+      <h2>💰 本周收入（自动统计，不用手填）</h2>
+      <div class="score-line" id="wkScore"></div>
+      <div class="score-detail" id="wkDetail"></div>
+      <div class="pk-line" id="wkPK"></div>
+      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ 口算 ¥1~4 + 认字 ¥1/字 · 会写 ¥2/字 + 小火车 ¥2，<b>每天封顶 ¥40</b>；英语场景 ¥5~6/个（每天 2 个）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
+    </div>
+    <div class="card">
+      <h2>🎯 这周我想认识这 5 个字</h2>
+      <div class="sub">周日晚上全家一起定（孩子说，大人帮着填）</div>
+      <div class="w-chars" id="wChars"></div>
+    </div>
+    <div class="card">
+      <h2>✅ 这周我想做到的事</h2>
+      <div id="wTodos"></div>
+    </div>
+    <div class="card">
+      <h2>⭐ 每天的星星</h2>
+      <div class="sub">点一下 +1 颗（最多 3 颗）。小火车开完全程、完成任务会自动加星 ✨</div>
+      <div class="w-stars" id="wStars"></div>
+      <div class="stat-bar" style="margin-top:12px" id="wStarTotal"></div>
+    </div>
+    <div class="card">
+      <h2>🎁 里程碑奖励（存钱进度到一半时兑现）</h2>
+      <input class="deal" id="wDeal" placeholder="比如：一本贴纸书 / 公园野餐一次 / 多讲三个睡前故事" oninput="saveDeal(this.value)">
+    </div>
+    <button class="btn btn-gray" onclick="newWeek()">🔄 开启新的一周（周日晚使用）</button>
+  </section>
+</main>
+
+<nav>
+  <button class="active" data-tab="routine" onclick="switchTab('routine',this)"><span class="n-e">🚂</span>流程</button>
+  <button data-tab="task" onclick="switchTab('task',this)"><span class="n-e">✏️</span>任务</button>
+  <button data-tab="wall" onclick="switchTab('wall',this)"><span class="n-e">🏰</span>识字墙</button>
+  <button data-tab="math" onclick="switchTab('math',this)"><span class="n-e">🔢</span>口算</button>
+  <button data-tab="eng" onclick="switchTab('eng',this)"><span class="n-e">🗣️</span>英语</button>
+  <button data-tab="week" onclick="switchTab('week',this)"><span class="n-e">🐷</span>存钱罐</button>
+</nav>
+
+<!-- 字卡操作弹层 -->
+<div class="modal-mask" id="charMask" onclick="if(event.target===this)closeChar()">
+  <div class="modal">
+    <button class="x" onclick="closeChar()">✕</button>
+    <h2 id="cmTitle"></h2>
+    <p id="cmInfo" style="text-align:center; margin:6px 0 12px;"></p>
+    <button class="btn btn-blue" onclick="speakCur()">🔊 读一读</button>
+    <button class="btn btn-green" id="cmMove" onclick="moveChar()"></button>
+    <button class="btn btn-blue" id="cmWrite" onclick="writeChar()"></button>
+    <button class="btn btn-gray" onclick="delChar()">🗑 删除这个字</button>
+  </div>
+</div>
+
+<!-- 家长弹窗 -->
+<div class="modal-mask" id="parentMask" onclick="if(event.target===this)closeParent()">
+  <div class="modal">
+    <button class="x" onclick="closeParent()">✕</button>
+    <h2>📖 家长速查（孩子请勿代答 😄）</h2>
+
+    <h3>① 夸具体，不夸聪明</h3>
+    <table>
+      <tr><td class="no">❌ 你真聪明！</td><td class="yes">你自己检查出错了，这叫细心</td></tr>
+      <tr><td class="no">❌ 真棒！（空泛）</td><td class="yes">今天的 8 写得比昨天正多了</td></tr>
+      <tr><td class="no">❌ 怎么又错了！</td><td class="yes">有点难？说明大脑正在长大</td></tr>
+      <tr><td class="no">❌ 快点快点！</td><td class="yes">我看到你已经坐好啦，沙漏一翻就开始</td></tr>
+      <tr><td class="no">❌ 你看人家…</td><td class="yes">你比上周的自己快了 5 秒！</td></tr>
+    </table>
+
+    <h3>② 三不打扰（专注力是保护出来的）</h3>
+    <p>🤫 他专注玩时不打断（不递水不纠姿势）<br>
+    🚫 写错不马上喊停，写完一起"找小侦探错误"<br>
+    ⏳ 计时交给工具，嘴上不催促</p>
+
+    <h3>③ 万能三句</h3>
+    <p>🤔 "你打算先做哪个？"（给自主感）<br>
+    🧗 "哪里最难？怎么打败它？"（给胜任感）<br>
+    🎤 "当小老师，讲给我听听？"（给联结感）</p>
+
+    <h3>④ 检查三步（每天 3 分钟）</h3>
+    <p>1️⃣ 让他自己先检查 → 2️⃣ 你只圈不说答案 → 3️⃣ 只夸一个具体的点</p>
+
+    <h3>🔄 重新开始</h3>
+    <button class="btn btn-gray" onclick="restartToday()">🔄 重新开始（今天）：清零今天的记录，从晚餐重新出发</button>
+
+    <h3>📱 在 iPad 上玩（两种方式）</h3>
+    <p>① <b>临时用（电脑要开着）</b>：在电脑上这个 html 所在文件夹里运行 <code>python -m http.server 8000</code>，iPad 连同一个 Wi-Fi，Safari 打开 <code>http://电脑IP:8000/文件名.html</code>。<br>
+    ② <b>长期用（推荐）</b>：把 html 传到任意静态托管（GitHub Pages / Cloudflare Pages / Netlify Drop），iPad 打开网址 →「分享 ⤴️ → 添加到主屏幕」，以后点图标就能玩。<br>
+    ⚠️ 数据存在 Safari 本地：<b>换网址、换浏览器、清理网站数据都会读不到旧数据</b>。迁移前先用下面的「下载备份文件」，到新地址再「从文件恢复」。同一个网址（同 IP + 同端口）下改文件名不影响数据。</p>
+
+    <h3>💾 数据备份（换设备 / 清浏览器前用）</h3>
+    <div style="display:flex; gap:8px; flex-wrap:wrap; margin:6px 0">
+      <button class="btn btn-blue" style="flex:1; min-width:150px; margin:0" onclick="exportFile()">⬇️ 下载备份文件</button>
+      <button class="btn btn-blue" style="flex:1; min-width:150px; margin:0" onclick="pickBackup()">⬆️ 从文件恢复</button>
+    </div>
+    <input type="file" id="bakFile" accept=".json,application/json,text/plain" style="display:none" onchange="importFile(this)">
+    <button class="btn btn-gray" onclick="exportData()">导出到文本框（电脑上复制粘贴用）</button>
+    <textarea id="bakArea" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="点导出后数据出现在这里（全选复制保存）；恢复时把备份粘贴进来，再点下面的按钮"></textarea>
+    <button class="btn btn-gray" onclick="importData()">从上面文本框恢复数据</button>
+    <p style="margin-top:10px; color:#98a6b5">所有数据只保存在本机浏览器里，不上传任何服务器。</p>
+  </div>
+</div>
+
+<!-- 发薪日工资单弹窗 -->
+<div class="modal-mask" id="payMask" onclick="if(event.target===this)closePay()">
+  <div class="modal">
+    <button class="x" onclick="closePay()">✕</button>
+    <h2>🧾 本周工资单</h2>
+    <div id="payBody"></div>
+    <button class="btn btn-green" onclick="payDone()">💰 已把钱放进存钱罐！</button>
+  </div>
+</div>
+
+<!-- 英语场景复习弹窗 -->
+<div class="modal-mask" id="engMask" onclick="if(event.target===this)closeEngReview()">
+  <div class="modal">
+    <button class="x" onclick="closeEngReview()">✕</button>
+    <div id="engReviewBody"></div>
+    <button class="btn btn-blue" onclick="speakEngAll()">🔊 连读一遍（问 + 全部句子）</button>
+  </div>
+</div>
+
+<!-- 字库参考弹窗 -->
+<div class="modal-mask" id="bankMask" onclick="if(event.target===this)closeBank()">
+  <div class="modal">
+    <button class="x" onclick="closeBank()">✕</button>
+    <h2>📖 字库参考（一二三年级常用字）</h2>
+    <div class="chips" id="bankGrades"></div>
+    <div class="sticker-grid" id="bankGrid"></div>
+    <div class="sub" style="text-align:center; margin-top:10px">点任意字 → 自动添加到生字村（带推荐组词）；变灰 ✓ 的表示已在墙上</div>
+  </div>
+</div>
+
+<!-- 收入明细弹窗 -->
+<div class="modal-mask" id="moneyMask" onclick="if(event.target===this)closeMoney()">
+  <div class="modal">
+    <button class="x" onclick="closeMoney()">✕</button>
+    <div id="moneyBody"></div>
+  </div>
+</div>
+
+<!-- 每日彩蛋浮钮 -->
+<div class="egg-float" id="eggFloat" style="display:none" onclick="eggFound()">🥚</div>
+
+<!-- 升级庆祝全屏动画 -->
+<div class="celebrate" id="celebrate" onclick="this.classList.remove('show')">
+  <div class="c-box"><div class="c-e" id="celE"></div><div class="c-t" id="celT"></div><div class="c-s" id="celS"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 状态 ================= */
+var LS = 'kidsStudyKit.v1';
+/* 每天的流程按星期动态生成：有课的日子自动出现课程卡片 */
+function stepsForToday(k) {
+  var s = [];
+  if (k==='tue'||k==='thu'||k==='sat') s.push({e:'🏫', t:'线下英语课', p:'17:00-18:30 放学后去'});
+  if (k==='mon') s.push({e:'🧱', t:'乐高课', p:'17:30 家人接送'});
+  if (k==='sun') s.push({e:'🌳', t:'家庭日', p:'户外撒野 充满电'});
+  s.push({e:'🍚', t:'晚餐', p:'好好吃饭 聊聊天'});
+  s.push({e:'🏃', t:'放电 5 分钟', p:'先动再静 专注加倍'});
+  if (k!=='sun') s.push({e:'🎧', t:'线上英语课', p:'大声跟读 30 分钟'});
+  s.push({e:'✏️', t:'我的小任务', p:'12 项里挑 1~2 项'});
+  s.push({e:'🎲', t:'好玩时间', p:'全身心 20 分钟'});
+  s.push({e:'🧺', t:'收拾小天地', p:'玩具回家 书归位'});
+  s.push({e:'🪥', t:'洗漱', p:'刷牙洗脸 自己来'});
+  s.push({e:'📖', t:'睡前故事', p:'猜猜接下来发生什么'});
+  if (k==='sun') s.push({e:'📊', t:'星星复盘', p:'数星星 定下周目标'});
+  s.push({e:'😴', t:'关灯睡觉', p:'22:00 呼呼睡'});
+  return s;
+}
+var DAY_TIPS = {
+  mon:'📢 今天周一：下午有乐高课，小任务选个轻量的就好',
+  tue:'📢 今天周二：线下英语课日（家人接送），晚上以休息为主',
+  wed:'🌟 今天周三：黄金亲子日！没有课外班，好玩时间可以拉长哦',
+  thu:'📢 今天周四：线下英语课日（家人接送），晚上以休息为主',
+  fri:'🌟 今天周五：黄金亲子日！没有课外班，好玩时间可以拉长哦',
+  sat:'📢 今天周六：上午玩数学游戏，下午 3 点线上英语、5 点线下英语',
+  sun:'🌳 今天周日：家庭日，晚上记得数星星、定下周小目标'
+};
+function freshRoutine() {
+  var n = stepsForToday(todayKey()).length;
+  var done = [];
+  for (var i=0;i<n;i++) done.push(false);
+  return {date: todayStr(), done: done, paid: false};   /* paid：满程奖励今天是否已发（每天只发一次） */
+}
+/* 12 项任务：学习 6 + 运动 3 + 生活 3，c=类别，base=基础报酬（元） */
+var TASKS = [
+  {e:'🔢', t:'口算一页',     c:'study', d:'10 以内加减法',   base:2},
+  {e:'✍️', t:'描红写字',     c:'study', d:'写 3 个字',       base:2},
+  {e:'📚', t:'自己翻书',     c:'study', d:'看图猜故事',      base:2},
+  {e:'🎓', t:'当小老师',     c:'study', d:'教爸妈今天学的',  base:2},
+  {e:'🔍', t:'小侦探找错',   c:'study', d:'检查昨天的练习',  base:2},
+  {e:'🗣️', t:'讲个小故事',   c:'study', d:'讲给家人听',      base:2},
+  {e:'🪢', t:'跳绳挑战',     c:'sport', d:'1 分钟跳绳',      base:2},
+  {e:'🏀', t:'拍球高手',     c:'sport', d:'连续拍 20 下',    base:2},
+  {e:'🏸', t:'羽毛球/台球',  c:'sport', d:'和爸妈来一局',    base:2},
+  {e:'🧹', t:'收拾小达人',   c:'life',  d:'玩具书包自己理',  base:1},
+  {e:'🍽️', t:'帮厨小助手',   c:'life',  d:'帮做一件家务',    base:1},
+  {e:'👕', t:'自己的事自己做', c:'life', d:'穿衣叠被洗漱',    base:1}
+];
+var CATS = {study:'📚 学习类 ¥2 起', sport:'🏃 运动类 ¥2 起', life:'🌱 生活类 ¥1 起'};
+var MAX_ROUNDS = 5;   /* 每项任务每天最多结算几轮（想放宽就改这个数） */
+var KID_CAP = 40;     /* 每日工资封顶（元）：任务+小火车+口算+识字+礼物计入；英语专项奖金与家长打卡不占额度。想调就改这里 */
+var CAP_CATS = {task:1, train:1, math:1, wall:1, gift:1};
+function catToday(cat) {
+  var t = todayStr(), s = 0;
+  for (var i=0;i<state.scores.length;i++) {
+    var e = state.scores[i];
+    if (e.d === t && e.cat === cat) s += e.pts;
+  }
+  return s;
+}
+function cappedToday() {   /* 计入封顶的工资部分 */
+  var s = 0;
+  for (var c in CAP_CATS) s += catToday(c);
+  return s;
+}
+function engToday() { return catToday('eng'); }   /* 英语专项奖金（不占封顶） */
+function earnedToday() { return cappedToday() + engToday(); }   /* 全部收入（展示用） */
+function kidRemaining() { return Math.max(0, KID_CAP - cappedToday()); }
+function renderWage() {
+  var el = document.getElementById('wageBar');
+  if (!el) return;
+  var e = cappedToday(), full = e >= KID_CAP;
+  var eg = engToday();
+  var line = full ? ('今日工资 ¥'+e+' 已领满'+(eg>0?'，英语专项 +¥'+eg:'')+'，明天继续 💪')
+                  : ('今日工资 ¥'+e+' / ¥'+KID_CAP+(eg>0?' · 英语专项奖金 +¥'+eg:''));
+  el.innerHTML = '<div class="hero-bar" style="border-color:'+(full?'#2ecc71':'#ffd591')+';background:'+(full?'#eefaf3':'linear-gradient(135deg,#fff6e5,#fffdf5)')+';cursor:pointer" onclick="openMoney()">'
+    + '<span class="hero-lv">'+(full?'✅':'💰')+'</span>'
+    + '<div class="hero-mid"><div class="hero-t">'+line+'</div>'
+    + '<div class="hero-p"><div class="hero-pf" style="width:'+Math.min(100, Math.round(e/KID_CAP*100))+'%"></div></div></div></div>';
+}
+/* 家长打卡项：给孩子做榜样，赚的钱进同一个存钱罐 */
+var PARENT_ITEMS = [
+  {k:'ai',    e:'💻', t:'学习充电', d:'AI / 新技能练习 30 分钟',        pts:2},
+  {k:'sport', e:'🏃', t:'出出汗',   d:'跳绳 · 台球 · 羽毛球 · 散步',    pts:2},
+  {k:'sleep', e:'😴', t:'早睡',     d:'23:30 前上床',                   pts:1}
+];
+
+/* ---- 游戏化配置（金额单位：元） ---- */
+var LEVELS = [
+  {min:0,   e:'🌱', t:'见习小勇士'},
+  {min:30,  e:'🥉', t:'铜牌小达人'},
+  {min:70,  e:'🥈', t:'银牌小达人'},
+  {min:120, e:'🥇', t:'金牌小达人'},
+  {min:180, e:'🏆', t:'传奇小达人'},
+  {min:250, e:'💎', t:'钻石王中王'}
+];
+var CNY_DATE = '2027-02-06';   /* 春节，存钱截止日 */
+var STICKERS = ['🦕','🦖','🦄','🐙','🦋','🐢','🐬','🦉','🐝','🐨','🦊','🐳'];
+var PRAISES = ['太厉害啦！','大脑又长大了一圈！','这个进步看得见！','全家都为你鼓掌！','今天的你超闪亮！'];
+var GIFT_MSGS = ['打开一看——金币雨！','哇，是装满星星的宝箱！','里面蹦出一只送分小恐龙！','是彩虹糖罐子，甜甜的金币！'];
+function levelIdx(total) {
+  var idx = 0;
+  for (var i=0;i<LEVELS.length;i++) if (total >= LEVELS[i].min) idx = i;
+  return idx;
+}
+/* 每天按日期固定推荐 3 项任务（当天刷新页面也不变） */
+function recommendedTasks() {
+  var seed = 0, s = todayStr();
+  for (var i=0;i<s.length;i++) seed = (seed*31 + s.charCodeAt(i)) % 997;
+  var picks = [];
+  while (picks.length < 3) {
+    seed = (seed*137 + 7) % 997;
+    var idx = seed % TASKS.length;
+    if (picks.indexOf(idx) < 0) picks.push(idx);
+  }
+  return picks;
+}
+function isRecommended(i) { return recommendedTasks().indexOf(i) >= 0; }
+var MILES = [10,20,40,60];
+var DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+var DAY_NAMES = {mon:'周一',tue:'周二',wed:'周三',thu:'周四',fri:'周五',sat:'周六',sun:'周日'};
+
+function defState() {
+  return {
+    routine: freshRoutine(),
+    tasks: {date: todayStr(), done: {}, gift: null},  /* done/轮次叠加；gift 神秘礼物 */
+    eng: {done:{}, date: todayStr(), count:0, today:[], pick:null, progress:null},  /* done/count/today/pick=今日自选/progress=练习进度（落盘） */
+    mood: null,                             /* 今日心情 {date, m} */
+    achievements: {},                       /* 成就 {id: 解锁日期} */
+    egg: null,                              /* 每日彩蛋 {date, tab, found} */
+    parent: {date: todayStr(), items: {}},  /* items: {ai, sport, sleep} */
+    scores: [],                             /* 得分流水：{d, cat, label, pts} */
+    extra: {total:0, swGoal:1000, promise:1300, streak:{count:0,last:''}, stickers:{}},  /* 已存金额/我的目标/爸爸补齐/连续天数/贴纸 */
+    chars: [],
+    math: [],
+    week: blankWeek()
+  };
+}
+function blankWeek() {
+  return {
+    weekStart: mondayStr(), chars:['','','','',''],
+    todos: [{text:'',done:false},{text:'',done:false},{text:'',done:false}],
+    stars: {mon:0,tue:0,wed:0,thu:0,fri:0,sat:0,sun:0}, deal:''
+  };
+}
+function load() {
+  try {
+    var s = JSON.parse(localStorage.getItem(LS));
+    if (s && s.routine) return s;
+  } catch(e) {}
+  return defState();
+}
+var saveWarned = false;
+function save() {   /* iPad Safari 无痕模式会抛异常：兜住，别让整页卡死 */
+  try {
+    localStorage.setItem(LS, JSON.stringify(state));
+  } catch(e) {
+    if (!saveWarned) {
+      saveWarned = true;
+      toast('⚠️ 这台设备存不了数据（无痕模式或空间已满），请先关闭无痕再玩，否则关页面就丢了');
+    }
+  }
+}
+var state = load();
+rollover();
+
+function pad(n){ return (n<10?'0':'')+n; }
+function todayStr(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function mondayStr(){
+  var d=new Date(); var off=(d.getDay()+6)%7; d.setDate(d.getDate()-off);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function rollover() {
+  var t = todayStr();
+  if (state.routine.date !== t) { state.routine = freshRoutine(); }
+  if (!state.tasks || state.tasks.date !== t) { state.tasks = {date:t, done:{}, gift:null}; }   /* 兼容旧数据 */
+  for (var tk in state.tasks.done) { var te = state.tasks.done[tk]; if (te && !te.rounds) te.rounds = 1; }   /* 旧格式补轮数 */
+  if (!state.eng) { state.eng = {done:{}, date:t, count:0, today:[]}; }
+  else {
+    if (state.eng.date !== t) { state.eng.date = t; state.eng.count = 0; state.eng.today = []; state.eng.pick = null; state.eng.progress = null; }   /* 英语场景每日清零 */
+    if (!state.eng.legacyChecked) {   /* 旧版“基础 10 个全点亮”的解锁记录迁移，避免扩库后被重新锁上 */
+      var legacy = true;
+      for (var li=0; li<10; li++) { if (!(state.eng.done && state.eng.done[li])) { legacy = false; break; } }
+      if (legacy) state.eng.advUnlockLegacy = true;
+      state.eng.legacyChecked = true;
+    }
+  }
+  if (!state.parent || state.parent.date !== t) { state.parent = {date:t, items:{}}; }
+  if (!state.scores) { state.scores = []; }
+  if (!state.extra) { state.extra = {total:0, swGoal:1000, promise:1300, streak:{count:0,last:''}, stickers:{}}; }
+  else {
+    if (state.extra.swGoal == null) { state.extra.swGoal = 1000; }   /* 兼容旧数据 */
+    if (state.extra.promise == null) { state.extra.promise = Math.max(0, 2300 - (state.extra.swGoal||1000)); }
+  }
+  if (state.mood && state.mood.date !== t) { state.mood = null; }   /* 心情每日清零 */
+  if (!state.achievements) { state.achievements = {}; }
+  if (!state.egg || state.egg.date !== t) { state.egg = {date:t, tab:['routine','task','wall','math','eng'][Math.floor(Math.random()*5)], found:false}; }   /* 每日彩蛋随机藏一个页签 */
+  if (state.week.weekStart !== mondayStr()) { state.week = blankWeek(); }
+  /* 字卡日期补录：日期功能上线前的老字，熟字城的按添加日（无则今天）补记 */
+  for (var ci2=0; ci2<state.chars.length; ci2++) {
+    var cc = state.chars[ci2];
+    if (!cc.addDate) cc.addDate = todayStr();
+    if (cc.zone==='old' && !cc.learnDate) cc.learnDate = cc.addDate || todayStr();
+    if (cc.zone==='old' && cc.earned == null) cc.earned = 1;   /* 老字补记认字收入 ¥1（累计口径） */
+    if (cc.zone==='old' && cc.wrote && !cc.earnedFix2) { cc.earned = (cc.earned||0) + 2; cc.earnedFix2 = true; }   /* 补记旧版会写认证 ¥2 */
+    if (cc.zone==='old' && cc.paidRec == null) cc.paidRec = true;   /* 已在熟字城的老字：认字奖励视为已领，防止再刷一遍 */
+    cc.dayEarn = wallTodayFor(cc.zi);   /* 今日该字收入：从账本重建，徽章合计=今日识字收入 */
+  }
+  save();
+}
+function toast(msg) {
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(function(){ el.classList.remove('show'); }, 2200);
+}
+function todayKey(){ return DAY_KEYS[new Date().getDay()]; }
+function addStar(n) {
+  var k = todayKey();
+  state.week.stars[k] = Math.min(3, (state.week.stars[k]||0) + (n||1));
+  save();
+}
+
+/* ---- 音效（Web Audio 现场合成，无需素材文件） ---- */
+var _ac = null;
+function ac() {
+  try {
+    if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
+    if (_ac.state === 'suspended') _ac.resume();
+    return _ac;
+  } catch(e) { return null; }
+}
+function tone(f, t0, dur, type, vol) {
+  var a = ac(); if (!a) return;
+  try {
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(vol || 0.08, a.currentTime + t0);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + t0 + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(a.currentTime + t0); o.stop(a.currentTime + t0 + dur + 0.05);
+  } catch(e) {}
+}
+function sndCoin(){ tone(1319,0,.09,'square',.06); tone(1760,.09,.22,'square',.06); }   /* 金币叮咚 */
+function sndOk(){ tone(880,0,.12,'sine',.09); }                                          /* 答对 */
+function sndBad(){ tone(196,0,.25,'square',.05); }                                       /* 答错 */
+function sndLevel(){ tone(523,0,.12); tone(659,.12,.12); tone(784,.24,.12); tone(1047,.36,.3); } /* 升级号角 */
+
+/* ================= 导航 ================= */
+function switchTab(name, btn) {
+  rollover();
+  var secs = document.querySelectorAll('.tab');
+  for (var i=0;i<secs.length;i++) secs[i].classList.remove('active');
+  document.getElementById('tab-'+name).classList.add('active');
+  var ns = document.querySelectorAll('nav button');
+  for (var j=0;j<ns.length;j++) ns[j].classList.remove('active');
+  btn.classList.add('active');
+  if (name==='routine') renderRoutine();
+  if (name==='task') renderTask();
+  if (name==='wall') renderWall();
+  if (name==='math') { renderMath(); renderQuiz(); }
+  if (name==='eng') renderEngPage();
+  if (name==='week') renderWeek();
+  renderEgg();
+}
+
+/* ================= 流程 ================= */
+var MOODS = [['😄','超开心'],['🙂','还不错'],['😐','一般般'],['😢','有点难过'],['😤','有点生气']];
+var STORIES = [
+  ['🚀 太空冒险','火箭点火出发！第一个星球上会遇到谁呢？'],
+  ['🦕 恐龙王国','一只小恐龙迷路了，它要穿过火山找妈妈……'],
+  ['🏰 公主与龙','城堡里传来“呼噜呼噜”的声音，是龙在睡觉……'],
+  ['🌊 海底探险','潜水艇慢慢下沉，灯光照亮了一条发光的鱼……'],
+  ['🚗 汽车总动员','小汽车今天第一次送快递，地图被风吹走了……'],
+  ['🌲 森林小屋','深夜，森林小屋的门被轻轻敲响了，是谁呢？'],
+  ['🪄 魔法学校','今天的魔法课教的是会飞的扫把，可是它不听话……'],
+  ['🐣 动物幼儿园','小鸡第一天上学，紧张得脸都红了……']
+];
+function trainStreakCount() {   /* 真正“开完小火车”的连续天数（不再被口算/英语等任意收入续上） */
+  var ts = state.extra.trainStreak;
+  return (ts && ts.count) || 0;
+}
+function trainLevel() {
+  var c = trainStreakCount();
+  if (c >= 14) return {e:'🚀', t:'星际火箭', next:'已是最高级！继续天天开，飞向火星 🔴'};
+  if (c >= 7)  return {e:'🚅', t:'高铁号', next:'再连续 '+(14-c)+' 天 → 升级 🚀 星际火箭'};
+  if (c >= 3)  return {e:'🚄', t:'动车组', next:'再连续 '+(7-c)+' 天 → 升级 🚅 高铁号'};
+  return {e:'🚂', t:'绿皮小火车', next:'连续 '+Math.max(1,3-c)+' 天开到终点 → 升级 🚄 动车组'};
+}
+function renderRoutine() {
+  var steps = stepsForToday(todayKey());
+  var done = state.routine.done;
+  while (done.length < steps.length) done.push(false);
+  /* 火车等级条 */
+  var tl = trainLevel();
+  var tlb = document.getElementById('trainLevelBar');
+  if (tlb) tlb.innerHTML = '<span class="hero-lv">'+tl.e+'</span><div class="hero-mid"><div class="hero-t">'+tl.t+' · 连续开到终点 '+trainStreakCount()+' 天</div><div class="hero-s">'+tl.next+'</div></div>';
+  /* 步骤 */
+  var html = '';
+  for (var i=0;i<steps.length;i++) {
+    var d = done[i];
+    html += '<div class="step'+(d?' done':'')+'" onclick="tapStep('+i+')">'
+      + (d?'<span class="tick">✅</span>':'')
+      + '<div class="e">'+steps[i].e+'</div><div class="t">'+steps[i].t+'</div>'
+      + '<div class="p">'+steps[i].p+'</div></div>';
+  }
+  document.getElementById('steps').innerHTML = html;
+  /* 轨道 + 火车位置 */
+  var n = 0;
+  for (var k2=0;k2<steps.length;k2++) if (done[k2]) n++;
+  var pct = Math.round(n/steps.length*100);
+  var fillEl = document.getElementById('trainFill');
+  if (fillEl) fillEl.style.width = pct+'%';
+  var dots = '';
+  for (var s2=0;s2<steps.length;s2++) dots += '<div class="station'+(done[s2]?' done':'')+'"></div>';
+  var stEl = document.getElementById('trainStations');
+  if (stEl) stEl.innerHTML = dots;
+  var emEl = document.getElementById('trainEmoji');
+  if (emEl) { emEl.textContent = tl.e; emEl.style.left = 'calc('+pct+'% - 12px)'; }
+  /* 信息行 + 明日预告 */
+  var info = '🚂 已开 '+n+'/'+steps.length+' 站';
+  var isAll = true;
+  for (var x2=0;x2<steps.length;x2++) if (!done[x2]) { isAll=false; break; }
+  if (isAll) {
+    var order = DAY_KEYS, ti2 = order.indexOf(todayKey());
+    var tk2 = (ti2===order.length-1) ? order[0] : order[ti2+1];
+    info += ' · 🎉 全程完成！<br>🌙 明天是星期'+({'mon':'一','tue':'二','wed':'三','thu':'四','fri':'五','sat':'六','sun':'日'}[tk2]||'')+'：'+(DAY_TIPS[tk2]||'');
+  } else {
+    info += ' · ' + (state.routine.paid ? '✅ 满程奖励今天已领过（每天一次）' : '全程开到终点 +¥2 和 ⭐');
+  }
+  document.getElementById('trainInfo').innerHTML = info;
+  document.getElementById('dayTip').textContent = DAY_TIPS[todayKey()]||'';
+  renderMood();
+  renderStoryBox();
+  renderPet();
+  renderAch();
+}
+function renderStoryBox() {
+  var el = document.getElementById('storyBox');
+  if (!el) return;
+  el.innerHTML = storyPick
+    ? '<div class="rate-box" style="border-color:#8e44ad; margin-bottom:10px"><div class="rate-t">'+storyPick[0]+'</div><div class="sub" style="margin:0">'+storyPick[1]+'<br><span style="color:#999">从这里编下去，让孩子加角色和转折 😄</span></div></div>'
+    : '<div class="empty-tip">点下面的按钮，摇一个今晚的故事主题 🎲</div>';
+}
+var storyPick = null;
+function tellStory() {
+  storyPick = STORIES[Math.floor(Math.random()*STORIES.length)];
+  sndOk();
+  renderStoryBox();
+}
+function renderMood() {
+  var el = document.getElementById('moodBox');
+  if (!el) return;
+  var isToday = state.mood && state.mood.date === todayStr();
+  var html = '';
+  for (var i=0;i<MOODS.length;i++) {
+    var on = isToday && state.mood.m === i;
+    html += '<span class="chip'+(on?' sel':'')+'" onclick="tapMood('+i+')" style="font-size:22px; padding:8px 12px">'+MOODS[i][0]+'</span>';
+  }
+  html += '<div class="sub" style="margin:8px 0 0">'+(isToday?'今天的心情：'+MOODS[state.mood.m][1]:'还没记录今天的心情')+'</div>';
+  el.innerHTML = html;
+}
+function tapMood(i) {
+  state.mood = {date: todayStr(), m: i};
+  save();
+  renderMood();
+  toast('记好啦：今天'+MOODS[i][1]+' '+MOODS[i][0]);
+}
+
+/* ================= 存钱宠物 ================= */
+function petStage() {
+  var t = state.extra.total;
+  if (t>=1000) return {e:'🦖', n:'守护飞龙', note:'它已经完全长大，是存钱罐最忠实的守护者！'};
+  if (t>=600)  return {e:'🐢', n:'努力龟', note:'每天进步一点点，壳越来越硬啦'};
+  if (t>=300)  return {e:'🐤', n:'跳跳鸡', note:'越来越活泼，一天一个样！'};
+  if (t>=100)  return {e:'🐣', n:'破壳小宝', note:'睁眼看世界，第一次见到钱！'};
+  return {e:'🥚', n:'神秘的蛋', note:'完成任务赚工资，把它孵化出来！'};
+}
+function renderPet() {
+  var el = document.getElementById('petBox');
+  if (!el) return;
+  var p = petStage(), t = state.extra.total;
+  var nextT = t>=1000 ? null : (t>=600 ? 1000 : (t>=300 ? 600 : (t>=100 ? 300 : 100)));
+  el.innerHTML = '<div class="hero-bar" style="border-color:#a55eea;background:linear-gradient(135deg,#f9f2fc,#fff)">'
+    + '<span class="hero-lv" style="font-size:34px">'+p.e+'</span>'
+    + '<div class="hero-mid"><div class="hero-t">'+p.n+'</div><div class="hero-s">'+p.note+'</div></div>'
+    + '<span style="font-size:12px;color:#8a97a6; white-space:nowrap">存钱罐 ¥'+t+'</span></div>'
+    + (nextT ? '<div class="mq-prog" style="margin-top:6px">再赚 ¥'+(nextT-t)+' → 进化成下一形态！</div>'
+             : '<div class="mq-prog" style="margin-top:6px">已满级 🐾 传说它会陪着小主人一起玩 Switch……</div>');
+}
+
+/* ================= 成就墙 ================= */
+var ACH = [
+  {id:'first_task', e:'✏️', t:'第一次打工',   d:'完成第一个赚钱任务'},
+  {id:'math_full',  e:'🏆', t:'口算全对',     d:'口算一次 10 题全对'},
+  {id:'train_3',    e:'🚄', t:'动车司机',     d:'小火车连续 3 天开到终点'},
+  {id:'train_7',    e:'🚅', t:'高铁司机',     d:'小火车连续 7 天开到终点'},
+  {id:'train_14',   e:'🚀', t:'火箭机长',     d:'小火车连续 14 天开到终点'},
+  {id:'save_100',   e:'💰', t:'小金库 ¥100',  d:'存钱罐攒到 100 元'},
+  {id:'save_500',   e:'🐷', t:'半个 Switch',  d:'存钱罐攒到 500 元'},
+  {id:'save_1000',  e:'🎮', t:'目标达成',     d:'存钱罐攒到 1000 元'},
+  {id:'char_10',    e:'🔤', t:'识字 10 个',   d:'熟字城住进 10 个字'},
+  {id:'char_30',    e:'📚', t:'识字 30 个',   d:'熟字城住进 30 个字'},
+  {id:'char_50',    e:'🎓', t:'识字 50 个',   d:'熟字城住进 50 个字'},
+  {id:'sticker_6',  e:'🏷️', t:'贴纸 6 种',    d:'贴纸册收集 6 种小动物'},
+  {id:'sticker_12', e:'🐾', t:'贴纸全家福',   d:'贴纸册 12 种全部集齐'},
+  {id:'eng_5',      e:'🗣️', t:'英语 5 场',    d:'英语场景累计演满 5 个'},
+  {id:'parent_3',   e:'👨‍💻', t:'榜样家长',     d:'家长打卡累计 3 次'}
+];
+function achCount(cat) {
+  var n = 0;
+  for (var i=0;i<state.scores.length;i++) { if (state.scores[i].cat===cat) n++; }
+  return n;
+}
+function masteredChars() {
+  var n = 0;
+  for (var i=0;i<state.chars.length;i++) { if (state.chars[i].zone==='old') n++; }
+  return n;
+}
+function stickerKinds() {
+  var s = state.extra.stickers || {}, n = 0;
+  for (var k in s) { if (s[k]>0) n++; }
+  return n;
+}
+function achConds() {
+  var streak = trainStreakCount();   /* 小火车的连续天数：必须真正开到终点 */
+  var total = state.extra.total;
+  var full = false;
+  for (var i=0;i<state.math.length;i++) { if (state.math[i].w===0) { full=true; break; } }
+  return {
+    first_task: achCount('task')>=1,
+    math_full: full,
+    train_3: streak>=3, train_7: streak>=7, train_14: streak>=14,
+    save_100: total>=100, save_500: total>=500, save_1000: total>=1000,
+    char_10: masteredChars()>=10, char_30: masteredChars()>=30, char_50: masteredChars()>=50,
+    sticker_6: stickerKinds()>=6, sticker_12: stickerKinds()>=12,
+    eng_5: achCount('eng')>=5, parent_3: achCount('parent')>=3
+  };
+}
+function checkAchievements() {
+  if (!state.achievements) state.achievements = {};
+  var cond = achConds();
+  var newly = [];
+  for (var i=0;i<ACH.length;i++) {
+    var a = ACH[i];
+    if (!state.achievements[a.id] && cond[a.id]) { state.achievements[a.id] = todayStr(); newly.push(a); }
+  }
+  if (newly.length) {
+    save();
+    showCele(newly[0].e, '成就解锁：'+newly[0].t, newly[0].d);
+    if (newly.length>1) setTimeout(function(){ toast('🏅 还有 '+(newly.length-1)+' 个新成就！打开成就墙看看'); }, 2800);
+  }
+}
+function renderAch() {
+  var el = document.getElementById('achGrid');
+  if (!el) return;
+  if (!state.achievements) state.achievements = {};
+  var unlocked = 0, html = '';
+  for (var i=0;i<ACH.length;i++) {
+    var a = ACH[i], got = !!state.achievements[a.id];
+    if (got) unlocked++;
+    html += '<div class="bank-chip'+(got?'':' off')+'" style="cursor:default"><div class="zi">'+(got?a.e:'🔒')+'</div><div class="ci">'+a.t+'</div></div>';
+  }
+  el.innerHTML = html;
+  var cnt = document.getElementById('achCount');
+  if (cnt) cnt.textContent = '已解锁 '+unlocked+' / '+ACH.length;
+}
+
+/* ================= 每日彩蛋 ================= */
+function renderEgg() {
+  var el = document.getElementById('eggFloat');
+  if (!el) return;
+  var active = document.querySelector('.tab.active');
+  var name = active ? active.id.replace('tab-','') : '';
+  var show = state.egg && state.egg.date===todayStr() && !state.egg.found && state.egg.tab===name;
+  el.style.display = show ? 'block' : 'none';
+}
+function eggFound() {
+  var pay = Math.min(1 + Math.floor(Math.random()*3), kidRemaining());
+  state.egg.found = true;
+  if (pay > 0) logScore('gift', '每日彩蛋', pay);
+  save(); renderEgg(); renderWage();
+  if (pay > 0) { sndCoin(); toast('🥚 彩蛋打开：+¥'+pay+' 直接进存钱罐！'); }
+  else { sndOk(); toast('🥚 彩蛋是空的——今天的工资已经领满啦'); }
+}
+function tapStep(i) {
+  var steps = stepsForToday(todayKey());
+  var done = state.routine.done;
+  while (done.length < steps.length) done.push(false);
+  var wasAll = true, isAll = true, x;
+  for (x=0;x<steps.length;x++) if (!done[x]) { wasAll=false; break; }
+  done[i] = !done[i];
+  for (x=0;x<steps.length;x++) if (!done[x]) { isAll=false; break; }
+  save(); renderRoutine();
+  if (done[i] && steps[i].t.indexOf('星星复盘') >= 0) openPay();   /* 周日复盘 → 自动弹工资单 */
+  if (!wasAll && isAll) {
+    if (state.routine.paid) { sndOk(); toast('🚂 小火车又到终点啦！满程奖励每天只有一次，明天再来领 💪'); }
+    else awardTrain();
+  }
+}
+function awardTrain(silent) {   /* 小火车满程奖励：每天只发一次（防止取消再勾选反复领钱） */
+  if (state.routine.paid) return 0;
+  state.routine.paid = true;
+  addStar(1);
+  /* 连续天数只认“真正开完小火车”的天 */
+  var ts = state.extra.trainStreak || (state.extra.trainStreak = {count:0, last:''});
+  var y = new Date(); y.setDate(y.getDate()-1);
+  var yest = y.getFullYear()+'-'+pad(y.getMonth()+1)+'-'+pad(y.getDate());
+  if (ts.last !== todayStr()) { ts.count = (ts.last === yest) ? ts.count+1 : 1; ts.last = todayStr(); }
+  var pay = Math.min(2, kidRemaining());   /* 每日工资封顶 */
+  if (pay > 0) { logScore('train', '小火车全程', pay); } else { save(); }
+  if (!silent) {
+    sndCoin();
+    toast(pay===2 ? '🎉 小火车开到终点啦！赚了 ¥2，今晚表现太棒了～'
+         : pay>0   ? '🎉 小火车到站！+¥'+pay+'，今日工资刚好领满 ¥'+KID_CAP+'～'
+                   : '🎉 小火车开到终点！今日工资已满 ¥'+KID_CAP+'，这趟算加练 💪');
+  }
+  return pay;
+}
+
+/* ================= 任务（12 项清单 + 评价得分 + 游戏化） ================= */
+var curTask = null;      /* 当前选中的任务序号 */
+var ratingTier = 0;      /* 评价档位 1/2/3 */
+function renderHero() {  /* 顶部：家庭等级 + 总积分 + 连续天数 */
+  var el = document.getElementById('heroBar');
+  if (!el) return;
+  var total = state.extra.total;
+  var idx = levelIdx(total);
+  var lv = LEVELS[idx], nxt = LEVELS[idx+1];
+  var fire = state.extra.streak.count >= 2 ? '<span class="hero-fire">🔥 连续 '+state.extra.streak.count+' 天</span>' : '';
+  var inner;
+  if (nxt) {
+    var pct = Math.min(100, Math.round((total-lv.min)/(nxt.min-lv.min)*100));
+    inner = '<div class="hero-mid"><div class="hero-t">'+lv.e+' '+lv.t+' · 已存 ¥'+total+'</div>'
+      + '<div class="hero-p"><div class="hero-pf" style="width:'+pct+'%"></div></div>'
+      + '<div class="hero-s">再存 ¥'+(nxt.min-total)+' 升级 → '+nxt.e+' '+nxt.t+'</div></div>';
+  } else {
+    inner = '<div class="hero-mid"><div class="hero-t">'+lv.e+' '+lv.t+' · 已存 ¥'+total+'</div>'
+      + '<div class="hero-s">已是最高等级，太传奇了！</div></div>';
+  }
+  el.innerHTML = '<div class="hero-bar"><span class="hero-lv">'+lv.e+'</span>'+inner+fire+'</div>';
+}
+function celebrate(lv) {  /* 升级全屏庆祝 */
+  sndLevel();
+  document.getElementById('celE').textContent = lv.e;
+  document.getElementById('celT').textContent = '升级啦！'+lv.t;
+  document.getElementById('celS').textContent = '已存到 ¥'+lv.min+'，继续冲呀！';
+  var c = document.getElementById('celebrate');
+  c.classList.add('show');
+  setTimeout(function(){ c.classList.remove('show'); }, 3000);
+}
+function showCele(e, t, s) {  /* 通用庆祝（成就解锁等）：复用全屏动画 */
+  sndLevel();
+  document.getElementById('celE').textContent = e;
+  document.getElementById('celT').textContent = t;
+  document.getElementById('celS').textContent = s || '';
+  var c = document.getElementById('celebrate');
+  c.classList.add('show');
+  clearTimeout(c._t);
+  c._t = setTimeout(function(){ c.classList.remove('show'); }, 3000);
+}
+function logScore(cat, label, pts) {  /* 记分 + 累计总积分 + 连续天数 + 升级检测 */
+  var before = levelIdx(state.extra.total);
+  state.extra.total += pts;
+  var sk = state.extra.streak;
+  if (sk.last !== todayStr()) {
+    var y = new Date(); y.setDate(y.getDate()-1);
+    var yest = y.getFullYear()+'-'+pad(y.getMonth()+1)+'-'+pad(y.getDate());
+    sk.count = (sk.last === yest) ? sk.count+1 : 1;
+    sk.last = todayStr();
+  }
+  state.scores.push({d:todayStr(), cat:cat, label:label, pts:pts});
+  if (state.scores.length > 500) state.scores.splice(0, state.scores.length-500);
+  save();
+  var after = levelIdx(state.extra.total);
+  if (after > before) { renderHero(); celebrate(LEVELS[after]); }
+  checkAchievements();
+}
+function tickRoutineStep(titlePart) {   /* 完成任务后自动点亮小火车对应卡片；若刚好满程，同步补发奖励 */
+  var steps = stepsForToday(todayKey());
+  for (var i=0;i<steps.length;i++) {
+    if (steps[i].t.indexOf(titlePart)>=0 && !state.routine.done[i]) {
+      state.routine.done[i]=true;
+      var all = true;
+      for (var k=0;k<steps.length;k++) { if (!state.routine.done[k]) { all=false; break; } }
+      if (all) { renderRoutine(); return awardTrain(true); }   /* 自动到站也要发钱，返回金额给调用方提示 */
+      return 0;
+    }
+  }
+  return 0;
+}
+function renderTask() {
+  renderHero();
+  renderWage();
+  renderDayEarn();
+  var doneMap = state.tasks.done;
+  var dk = todayKey();
+  var html = '';
+  if (dk==='tue'||dk==='thu'||dk==='sat') {
+    html += '<div class="sub" style="color:#b06a00">📢 今天有线下英语课：挑 1 个轻的任务就够了，或者休息也 OK</div>';
+  } else if (dk==='mon') {
+    html += '<div class="sub" style="color:#b06a00">📢 今天有乐高课：挑个轻量的任务就好</div>';
+  }
+  var order = ['study','sport','life'];
+  for (var g=0; g<order.length; g++) {
+    html += '<div class="cat-title">'+CATS[order[g]]+'</div><div class="tasks">';
+    for (var i=0;i<TASKS.length;i++) {
+      var task = TASKS[i];
+      if (task.c!==order[g]) continue;
+      var dn = doneMap[i];
+      var rec = isRecommended(i);
+      html += '<div class="task'+(dn?' ok':(curTask===i?' sel':''))+'" onclick="pickTask('+i+')">'
+        + '<div class="e">'+task.e+'</div><div class="t">'+task.t+'</div>'
+        + '<div class="p2">'+task.d+' · 基础 ¥'+task.base+'</div>'
+        + (dn ? '<span class="badge">+¥'+dn.pts+(dn.rounds>1?' ×'+dn.rounds+'轮':'')+' ✅</span>'
+              : (curTask===i ? '<span class="tag">进行中 ✓</span>'
+                             : (rec ? '<span class="rec-tag">⭐今日推荐 +¥1</span>' : '')))
+        + '</div>';
+    }
+    html += '</div>';
+  }
+  if (curTask!==null) {
+    var isRedo = !!doneMap[curTask];
+    var roundNo = isRedo ? (doneMap[curTask].rounds||1)+1 : 1;
+    html += '<div class="rate-box"><div class="rate-t">'+(isRedo ? '🔁 「'+TASKS[curTask].t+'」再来一轮（第 '+roundNo+'/'+MAX_ROUNDS+' 轮）' : '📝 「'+TASKS[curTask].t+'」做完啦？做得怎么样？')+'</div>'
+      + (isRedo ? '<div class="sub" style="text-align:center">1 轮 = 卡片上的基础量（跳绳 1 分钟 / 口算 1 页），做了几轮叠几轮！</div>' : '')
+      + '<div class="rate-opts">'
+      + '<div class="rate-opt'+(ratingTier===1?' sel':'')+'" onclick="pickRate(1)"><div class="ro-e">💪</div><div class="ro-t">完成啦</div><div class="ro-s">+¥'+TASKS[curTask].base+'</div></div>'
+      + '<div class="rate-opt'+(ratingTier===2?' sel':'')+'" onclick="pickRate(2)"><div class="ro-e">😄</div><div class="ro-t">做得很棒</div><div class="ro-s">+¥'+(TASKS[curTask].base+1)+'</div></div>'
+      + '<div class="rate-opt'+(ratingTier===3?' sel':'')+'" onclick="pickRate(3)"><div class="ro-e">🤩</div><div class="ro-t">超级棒！</div><div class="ro-s">+¥'+(TASKS[curTask].base+2)+'</div></div>'
+      + '</div>'
+      + (isRecommended(curTask) ? '<div class="sub" style="text-align:center">⭐ 这是今日推荐任务，每轮都多赚 ¥1！</div>' : '')
+      + '<button class="btn btn-green" onclick="finishTask()">💰 '+(isRedo ? '再赚一轮' : '存进存钱罐')+'</button></div>';
+  }
+  if (state.tasks.gift) {
+    html += '<div class="gift-box" onclick="openGift()"><div class="g-e">🎁</div><div class="g-t">神秘礼物出现啦！点开它！</div></div>';
+  }
+  document.getElementById('taskArea').innerHTML = html;
+  renderParent();
+  renderStickers();
+}
+function pickTask(i) {
+  var dn = state.tasks.done[i];
+  if (dn && (dn.rounds||1) >= MAX_ROUNDS) {
+    curTask = null; renderTask();
+    toast('「'+TASKS[i].t+'」今天已满 '+MAX_ROUNDS+' 轮，赚了 ¥'+dn.pts+'，明天再战 💪');
+    return;
+  }
+  if (curTask===i && !dn) { curTask = null; }   /* 再点一下取消 */
+  else { curTask = i; }
+  ratingTier = 0;
+  renderTask();
+  if (curTask!==null) toast(dn ? '🔁 再来一轮「'+TASKS[i].t+'」！' : '自己选的：「'+TASKS[i].t+'」，开始吧 💪');
+}
+function pickRate(n) { ratingTier = n; renderTask(); }
+function finishTask() {
+  if (curTask===null) return;
+  if (ratingTier===0) { toast('先选一个评价：完成啦 / 做得很棒 / 超级棒？'); return; }
+  var task = TASKS[curTask];
+  var pts = task.base + (ratingTier-1);   /* 与界面一致：完成 / 很棒 +1 / 超级棒 +2（原来差一倍） */
+  if (isRecommended(curTask)) pts += 1;
+  var pay = Math.min(pts, kidRemaining());   /* 每日工资封顶：多出的部分只给贴纸不给钱 */
+  var prev = state.tasks.done[curTask];
+  var roundNo;
+  if (prev) {   /* 次数叠加：同一项今天再赚一轮 */
+    prev.rounds = (prev.rounds||1) + 1;
+    prev.pts += pay;
+    prev.stars = ratingTier;
+    roundNo = prev.rounds;
+  } else {
+    state.tasks.done[curTask] = {stars:ratingTier, pts:pay, rounds:1};
+    roundNo = 1;
+  }
+  var totalPts = state.tasks.done[curTask].pts;
+  if (pay > 0) { logScore('task', task.t, pay); }
+  var trainPay = tickRoutineStep('小任务');
+  addStar(1);
+  /* 随机掉落贴纸 */
+  var st = STICKERS[Math.floor(Math.random()*STICKERS.length)];
+  state.extra.stickers[st] = (state.extra.stickers[st]||0)+1;
+  /* 25% 概率出现神秘礼物 ¥1~3 */
+  var gotGift = Math.random() < 0.25;
+  if (gotGift) state.tasks.gift = 1 + Math.floor(Math.random()*3);
+  var praise = PRAISES[Math.floor(Math.random()*PRAISES.length)];
+  curTask = null; ratingTier = 0;
+  save(); renderTask();
+  if (pay === 0) { sndOk(); toast('⭐ 今日工资已领满 ¥'+KID_CAP+'！这轮送贴纸和星星，钱明天再赚 💪'); }
+  else if (pay < pts) { sndCoin(); toast('🎉 「'+task.t+'」第 '+roundNo+' 轮 +¥'+pay+'，今日工资刚好领满 ¥'+KID_CAP+'！掉落贴纸 '+st); }
+  else { sndCoin(); toast('🎉 「'+task.t+'」第 '+roundNo+' 轮 +¥'+pts+'（今日累计 ¥'+totalPts+'），'+praise+' 掉落贴纸 '+st); }
+  if (gotGift) setTimeout(function(){ toast('🎁 咦？任务页出现了一个神秘礼物…快去点开！'); }, 2400);
+  if (trainPay > 0) setTimeout(function(){ toast('🚂 小火车也开到终点啦！额外 +¥'+trainPay+' ⭐'); }, 4800);
+}
+function openGift() {
+  var pts = state.tasks.gift;
+  if (!pts) return;
+  state.tasks.gift = null;
+  var msg = GIFT_MSGS[Math.floor(Math.random()*GIFT_MSGS.length)];
+  var pay = Math.min(pts, kidRemaining());   /* 每日工资封顶 */
+  if (pay > 0) logScore('gift', '神秘礼物', pay);
+  renderTask();
+  if (pay > 0) { sndCoin(); toast(msg+' +¥'+pay+'！'); }
+  else { sndOk(); toast('🎁 打开一看——今天的钱袋已经满啦！心意收下，明天再来 💰'); }
+}
+function renderStickers() {
+  var el = document.getElementById('stickerArea');
+  if (!el) return;
+  var kinds = 0, html = '';
+  for (var i=0;i<STICKERS.length;i++) {
+    var n = state.extra.stickers[STICKERS[i]]||0;
+    if (n>0) kinds++;
+    html += '<div class="sticker'+(n?'':' off')+'"><div class="s-e">'+(n?STICKERS[i]:'❓')+'</div>'
+      + '<div class="s-n">'+(n ? (n>1 ? STICKERS[i]+'×'+n : '有了 ✓') : '未获得')+'</div></div>';
+  }
+  el.innerHTML = '<div style="grid-column:1/-1; font-size:12px; color:#8a97a6">已收集 '+kinds+' / 12 种'+(kinds>=12?' 🎉 全集齐啦，太厉害了！':'')+'</div>' + html;
+}
+
+/* ================= 家长打卡 ================= */
+function renderParent() {
+  var el = document.getElementById('parentArea');
+  if (!el) return;
+  var html = '<div class="plist">';
+  for (var i=0;i<PARENT_ITEMS.length;i++) {
+    var it = PARENT_ITEMS[i];
+    var on = !!state.parent.items[it.k];
+    html += '<div class="pitem'+(on?' on':'')+'" onclick="toggleParent(\''+it.k+'\','+it.pts+',\''+it.t+'\')">'
+      + '<span class="pi-e">'+it.e+'</span><span class="pi-t">'+it.t+'</span>'
+      + '<span class="pi-d">'+it.d+'</span>'
+      + '<span class="pi-s">'+(on ? '¥'+it.pts+' ✓' : '+¥'+it.pts)+'</span></div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+function undoScore(label) {   /* 撤销今天某标签的最新一笔，返回被撤销的金额 */
+  for (var i=state.scores.length-1;i>=0;i--) {
+    var s = state.scores[i];
+    if (s.d===todayStr() && s.label===label) { state.scores.splice(i,1); return s.pts || 0; }
+  }
+  return 0;
+}
+function toggleParent(k, pts, label) {
+  if (state.parent.items[k]) {
+    delete state.parent.items[k];
+    var back = undoScore(label);
+    state.extra.total = Math.max(0, state.extra.total - back);   /* 取消打卡要把钱一起退回，否则反复切换会虚增 */
+    save(); renderParent(); renderHero(); renderWeek();
+    if (back > 0) toast('已取消打卡，存钱罐同时扣回 ¥'+back);
+    return;
+  }
+  state.parent.items[k] = true;
+  logScore('parent', label, pts);
+  save(); renderParent(); renderHero(); renderWeek();
+  toast('👨‍💻 赚到 ¥'+pts+'！孩子都看在眼里呢');
+}
+
+/* ================= 英语口语场景（¥5/个，每天 2 个） ================= */
+var ENG_SCENES = [
+  {lv:1, t:'心情变变变', s:[{"q":"Hello! How are you?","a":"I am ___ , thank you!","items":[["happy","开心"],["fine","很好"],["great","棒极了"],["sleepy","困困"],["hungry","饿饿的"],["excited","兴奋的"]]},{"q":"Are you hungry?","a":"Yes, I am a little ___ !","items":[["hungry","饿饿的"],["thirsty","口渴的"],["tired","累累的"],["happy","开心的"],["excited","兴奋的"],["sleepy","困困的"]]}]},
+  {lv:1, t:'颜色大搜索', s:[{"q":"What color do you like?","a":"I like ___ !","items":[["red","红色"],["blue","蓝色"],["yellow","黄色"],["green","绿色"],["pink","粉色"],["orange","橙色"]]},{"q":"What color is the sky?","a":"The sky is ___ !","items":[["blue","蓝色"],["white","白色"],["gray","灰色"],["orange","橙色"],["red","红色"],["pink","粉色"]]}]},
+  {lv:1, t:'动物运动会', s:[{"q":"What animal do you like?","a":"I like ___ !","items":[["cats","小猫"],["dogs","小狗"],["ducks","鸭子"],["pandas","熊猫"],["tigers","老虎"],["elephants","大象"]]},{"q":"Which animal is big?","a":"The ___ is big!","items":[["elephant","大象"],["tiger","老虎"],["panda","熊猫"],["horse","马"],["duck","鸭子"],["cat","小猫"]]}]},
+  {lv:1, t:'水果小超市', s:[{"q":"What fruit do you like?","a":"I like ___ !","items":[["apples","苹果"],["bananas","香蕉"],["grapes","葡萄"],["mangoes","芒果"],["oranges","橙子"],["peaches","桃子"]]},{"q":"What fruit is sweet?","a":"The ___ is sweet!","items":[["peach","桃子"],["grape","葡萄"],["mango","芒果"],["apple","苹果"],["banana","香蕉"],["orange","橙子"]]}]},
+  {lv:1, t:'我的家人', s:[{"q":"Who do you love?","a":"I love my ___ !","items":[["daddy","爸爸"],["mommy","妈妈"],["grandpa","爷爷"],["grandma","奶奶"],["brother","哥哥"],["sister","姐姐"]]},{"q":"Who is in your family?","a":"My ___ is in my family!","items":[["daddy","爸爸"],["mommy","妈妈"],["brother","哥哥"],["sister","姐妹"],["grandpa","爷爷"],["grandma","奶奶"]]}]},
+  {lv:1, t:'数字数一数', s:[{"q":"How many apples?","a":"___ apples!","items":[["two","两"],["three","三"],["four","四"],["five","五"],["six","六"],["seven","七"]]},{"q":"How old are you?","a":"I am ___ years old!","items":[["four","四"],["five","五"],["six","六"],["seven","七"],["eight","八"],["nine","九"]]}]},
+  {lv:1, t:'心情播报员', s:[{"q":"How are you today?","a":"I am ___ today!","items":[["happy","开心"],["excited","兴奋"],["tired","累累的"],["hungry","饿饿的"],["sad","难过的"],["angry","生气的"]]},{"q":"Why are you happy?","a":"___ makes me happy!","items":[["Playing games","玩游戏"],["My toys","我的玩具"],["Story time","故事时间"],["Yummy food","好吃的"],["A sunny day","晴天"],["My friends","朋友们"]]}]},
+  {lv:1, t:'穿衣小能手', s:[{"q":"What do you want to wear?","a":"I want my ___ !","items":[["coat","外套"],["shoes","鞋子"],["hat","帽子"],["scarf","围巾"],["gloves","手套"],["sweater","毛衣"]]},{"q":"What do you put on your feet?","a":"I put on my ___ !","items":[["shoes","鞋子"],["socks","袜子"],["slippers","拖鞋"],["boots","靴子"],["sandals","凉鞋"],["sneakers","运动鞋"]]}]},
+  {lv:1, t:'餐桌小客人', s:[{"q":"What do you want to eat?","a":"I want ___ , please!","items":[["rice","米饭"],["noodles","面条"],["eggs","鸡蛋"],["fish","鱼"],["soup","汤"],["dumplings","饺子"]]},{"q":"Is it yummy?","a":"Yes! It is very ___ !","items":[["yummy","好吃"],["sweet","甜甜的"],["salty","咸咸的"],["sour","酸酸的"],["hot","烫烫的"],["crispy","酥酥的"]]}]},
+  {lv:1, t:'洗漱进行曲', s:[{"q":"What do you do in the morning?","a":"I ___ in the morning!","items":[["brush my teeth","刷牙"],["wash my face","洗脸"],["comb my hair","梳头"],["get dressed","穿衣服"],["wash my hands","洗手"],["rinse my mouth","漱口"]]},{"q":"What do you do before bed?","a":"I ___ before bed!","items":[["brush my teeth","刷牙"],["wash my face","洗脸"],["read a book","看书"],["drink milk","喝牛奶"],["hug mommy","抱抱妈妈"],["close my eyes","闭眼睛"]]}]},
+  {lv:2, t:'身体指挥官', s:[{"q":"Touch your ___ !","a":"This is my ___ !","items":[["nose","鼻子"],["ears","耳朵"],["eyes","眼睛"],["mouth","嘴巴"],["shoulders","肩膀"],["knees","膝盖"]]},{"q":"How many eyes do you have?","a":"I have ___ !","items":[["two eyes","两只眼睛"],["one nose","一个鼻子"],["ten fingers","十根手指"],["two ears","两只耳朵"],["one mouth","一个嘴巴"],["two feet","两只脚"]]},{"q":"What can your hands do?","a":"My hands can ___ !","items":[["draw","画画"],["clap","拍手"],["write","写字"],["wash","洗"],["wave","打招呼"],["catch","接东西"]]}]},
+  {lv:2, t:'天气预报员', s:[{"q":"What is the weather like?","a":"It is ___ today!","items":[["sunny","晴天"],["rainy","下雨"],["cloudy","多云"],["windy","有风"],["snowy","下雪"],["hot","炎热"]]},{"q":"What do you wear on a rainy day?","a":"I wear a ___ !","items":[["raincoat","雨衣"],["rain boots","雨靴"],["hat","帽子"],["sweater","毛衣"],["warm coat","暖外套"],["scarf","围巾"]]},{"q":"What do you see after rain?","a":"I see ___ after rain!","items":[["a rainbow","彩虹"],["puddles","水洼"],["wet leaves","湿叶子"],["snails","蜗牛"],["clouds","云朵"],["umbrellas","雨伞"]]}]},
+  {lv:2, t:'玩具在哪里', s:[{"q":"Where is your ___ ?","a":"My ___ is on the chair!","items":[["teddy bear","泰迪熊"],["robot","机器人"],["ball","皮球"],["toy car","玩具车"],["blocks","积木"],["kite","风筝"]]},{"q":"Is it under the bed?","a":"No, it is on the ___ !","items":[["chair","椅子"],["table","桌子"],["sofa","沙发"],["shelf","架子"],["floor","地板"],["box","箱子"]]},{"q":"Who plays toys with you?","a":"___ plays with me!","items":[["Mommy","妈妈"],["Daddy","爸爸"],["Grandma","奶奶"],["My friend","我的朋友"],["My cousin","表哥"],["The baby","小宝宝"]]}]},
+  {lv:2, t:'公园大冒险', s:[{"q":"What do you see in the park?","a":"I see a ___ !","items":[["big tree","大树"],["little bird","小鸟"],["red flower","红花"],["white cloud","白云"],["pond","池塘"],["bench","长椅"]]},{"q":"What do you hear in the park?","a":"I hear ___ !","items":[["birds singing","鸟叫"],["the wind","风声"],["children laughing","孩子的笑声"],["water flowing","流水声"],["my voice","我的喊声"],["a dog barking","狗叫"]]},{"q":"What do you do in the park?","a":"I ___ in the park!","items":[["run","跑步"],["fly a kite","放风筝"],["play ball","玩球"],["sit on the bench","坐长椅"],["climb","攀爬"],["go boating","划船"]]}]},
+  {lv:2, t:'生日愿望', s:[{"q":"What do you wish for?","a":"I wish for ___ !","items":[["a big cake","一个大蛋糕"],["toys","玩具"],["candy","糖果"],["a party","一个派对"],["a toy train","玩具火车"],["a new book","一本新书"]]},{"q":"Who comes to your party?","a":"___ comes to my party!","items":[["Grandpa","爷爷"],["Grandma","奶奶"],["My friends","朋友们"],["My cousins","表哥表妹"],["Auntie","阿姨"],["Uncle","叔叔"]]},{"q":"What cake do you want?","a":"I want a ___ cake!","items":[["big","大大的"],["chocolate","巧克力"],["strawberry","草莓"],["cream","奶油"],["carrot","胡萝卜"],["small","小小的"]]}]},
+  {lv:2, t:'小小售货员', s:[{"q":"What do you want to buy?","a":"I want the ___ , please!","items":[["toy car","玩具车"],["teddy bear","泰迪熊"],["ball","皮球"],["picture book","绘本"],["building blocks","积木"],["color pen","彩笔"]]},{"q":"How much is it?","a":"It is ___ yuan!","items":[["one","一"],["two","两"],["three","三"],["five","五"],["ten","十"],["twenty","二十"]]},{"q":"What do you say when paying?","a":"___ !","items":[["Here you are","给您"],["Thank you","谢谢"],["Bye bye","再见"],["Here is the money","这是钱"],["Keep the change","不用找了"],["Have a nice day","祝你愉快"]]}]},
+  {lv:2, t:'叮咚打电话', s:[{"q":"Hello, who is it?","a":"It is ___ !","items":[["grandpa","爷爷"],["grandma","奶奶"],["auntie","阿姨"],["uncle","叔叔"],["my friend","我的朋友"],["cousin","表哥"]]},{"q":"What do you say on the phone?","a":"Let us ___ !","items":[["play together","一起玩"],["meet tomorrow","明天见"],["talk later","待会聊"],["go out","出去玩"],["sing a song","唱首歌"],["say hello","问个好"]]},{"q":"When do you call grandpa?","a":"I call him on ___ !","items":[["Sundays","星期日"],["holidays","节日"],["birthdays","生日"],["weekends","周末"],["rainy days","下雨天"],["evenings","晚上"]]}]},
+  {lv:2, t:'家务小帮手', s:[{"q":"What can you do?","a":"I can ___ !","items":[["sweep","扫地"],["cook","做饭"],["wash dishes","洗碗"],["clean the table","擦桌子"],["water the flowers","浇花"],["tidy the bed","铺床"]]},{"q":"Where do you help?","a":"I help in the ___ !","items":[["kitchen","厨房"],["living room","客厅"],["bedroom","卧室"],["bathroom","卫生间"],["balcony","阳台"],["dining room","饭厅"]]},{"q":"What do you use to clean?","a":"I use ___ !","items":[["a broom","扫把"],["a mop","拖把"],["a rag","抹布"],["water","清水"],["a brush","刷子"],["my hands","我的手"]]}]},
+  {lv:2, t:'我的一天', s:[{"q":"What do you do every day?","a":"I ___ every day!","items":[["go to school","上学"],["play games","玩游戏"],["read books","看书"],["jump rope","跳绳"],["draw pictures","画画"],["sing songs","唱歌"]]},{"q":"What do you do after school?","a":"I ___ after school!","items":[["play games","玩游戏"],["do homework","做作业"],["take a nap","午睡"],["watch cartoons","看动画"],["eat snacks","吃点心"],["play outside","出去玩"]]},{"q":"What do you do on weekends?","a":"I ___ on weekends!","items":[["visit grandpa","看爷爷"],["go to the park","去公园"],["read books","看书"],["play with friends","和朋友玩"],["help mommy","帮妈妈"],["take a trip","去旅行"]]}]},
+  {lv:2, t:'礼貌小达人', s:[{"q":"Someone gives you a gift. What do you say?","a":"___ !","items":[["Thank you","谢谢"],["I love it","我很喜欢"],["It is great","太棒了"],["You are kind","你真好"],["How nice of you","你真好心"],["It is beautiful","它很漂亮"]]},{"q":"Someone helps you. What do you say?","a":"___ !","items":[["Thank you","谢谢"],["You are so kind","你真好"],["Thanks a lot","多谢"],["I appreciate it","非常感谢"],["You are my hero","你是我的英雄"],["That helps a lot","帮大忙了"]]},{"q":"You bump into someone. What do you say?","a":"___ !","items":[["I am sorry","对不起"],["Excuse me","借过"],["Are you OK","你还好吗"],["My mistake","我的错"],["It was not on purpose","我不是故意的"],["Let me help you","让我帮你"]]}]},
+  {lv:1, t:'交通工具', s:[{"q":"How do you go to school?","a":"I go by ___ !","items":[["bus","公交车"],["car","小汽车"],["bike","自行车"],["subway","地铁"],["taxi","出租车"],["train","火车"]]},{"q":"What do you take to the park?","a":"I take the ___ !","items":[["bus","公交车"],["car","小汽车"],["bike","自行车"],["taxi","出租车"],["subway","地铁"],["train","火车"]]}]},
+  {lv:1, t:'想喝点什么', s:[{"q":"What do you want to drink?","a":"I want ___ , please!","items":[["water","水"],["milk","牛奶"],["juice","果汁"],["yogurt","酸奶"],["soymilk","豆浆"],["lemon water","柠檬水"]]},{"q":"What do you drink in the morning?","a":"I drink ___ in the morning!","items":[["milk","牛奶"],["water","温水"],["soymilk","豆浆"],["juice","果汁"],["yogurt","酸奶"],["honey water","蜂蜜水"]]}]},
+  {lv:1, t:'小猫在哪里', s:[{"q":"Where is the cat?","a":"It is ___ the box!","items":[["on","在上面"],["under","在下面"],["in","在里面"],["behind","在后面"],["beside","在旁边"],["near","在附近"]]},{"q":"Where is your ball?","a":"It is ___ the box!","items":[["on","在上面"],["under","在下面"],["in","在里面"],["behind","在后面"],["beside","在旁边"],["near","在附近"]]}]},
+  {lv:1, t:'早餐吃什么', s:[{"q":"What do you have for breakfast?","a":"I have ___ for breakfast!","items":[["eggs","鸡蛋"],["bread","面包"],["milk","牛奶"],["cake","蛋糕"],["porridge","粥"],["baozi","包子"]]},{"q":"What does daddy eat?","a":"Daddy eats ___ !","items":[["eggs","鸡蛋"],["bread","面包"],["baozi","包子"],["porridge","粥"],["milk","牛奶"],["cake","蛋糕"]]}]},
+  {lv:1, t:'星期报时', s:[{"q":"What day is it today?","a":"It is ___ !","items":[["Monday","星期一"],["Tuesday","星期二"],["Wednesday","星期三"],["Thursday","星期四"],["Friday","星期五"],["Saturday","星期六"]]},{"q":"Which day do you like?","a":"I like ___ !","items":[["Monday","星期一"],["Tuesday","星期二"],["Wednesday","星期三"],["Friday","星期五"],["Saturday","星期六"],["Sunday","星期日"]]}]},
+  {lv:1, t:'四季宝宝', s:[{"q":"Which season do you like?","a":"I like ___ !","items":[["spring","春天"],["summer","夏天"],["autumn","秋天"],["winter","冬天"],["the Spring Festival","春节"],["Christmas","圣诞节"]]},{"q":"Is it cold in winter?","a":"Yes, it is ___ !","items":[["cold","寒冷"],["cool","凉爽"],["warm","温暖"],["hot","炎热"],["sunny","晴朗"],["rainy","多雨"]]}]},
+  {lv:1, t:'书包里有什么', s:[{"q":"What is in your schoolbag?","a":"A ___ is in my schoolbag!","items":[["pencil","铅笔"],["ruler","尺子"],["eraser","橡皮"],["book","书"],["pencil box","文具盒"],["notebook","本子"]]},{"q":"What do you write with?","a":"I write with a ___ !","items":[["pencil","铅笔"],["crayon","蜡笔"],["pen","钢笔"],["eraser","橡皮"],["ruler","尺子"],["marker","记号笔"]]}]},
+  {lv:1, t:'洗澡顺序', s:[{"q":"What do you wash first?","a":"I wash my ___ first!","items":[["hands","小手"],["face","小脸"],["feet","小脚"],["hair","头发"],["ears","耳朵"],["neck","脖子"]]},{"q":"What do you use to wash?","a":"I use ___ !","items":[["soap","香皂"],["shampoo","洗发水"],["a towel","毛巾"],["water","清水"],["a brush","小刷子"],["bubbles","泡泡"]]}]},
+  {lv:1, t:'午餐时间', s:[{"q":"What is for lunch?","a":"___ is for lunch!","items":[["Rice","米饭"],["Chicken","鸡肉"],["Soup","汤"],["Vegetables","蔬菜"],["Noodles","面条"],["Fish","鱼"]]},{"q":"Do you want more rice?","a":"Yes, more ___ , please!","items":[["rice","米饭"],["soup","汤"],["chicken","鸡肉"],["vegetables","蔬菜"],["noodles","面条"],["fish","鱼"]]}]},
+  {lv:1, t:'我的宠物', s:[{"q":"Do you have a pet?","a":"I have a ___ !","items":[["dog","小狗"],["cat","小猫"],["fish","小鱼"],["rabbit","兔子"],["bird","鸟"],["hamster","仓鼠"]]},{"q":"What does your pet eat?","a":"It eats ___ !","items":[["bones","骨头"],["carrots","胡萝卜"],["grass","草"],["seeds","谷粒"],["biscuits","饼干"],["milk","牛奶"]]}]},
+  {lv:1, t:'操场器械', s:[{"q":"What do you play on the playground?","a":"I play on the ___ !","items":[["slide","滑梯"],["swing","秋千"],["seesaw","跷跷板"],["sandbox","沙池"],["balls","球"],["climbing frame","攀爬架"]]},{"q":"Who plays with you?","a":"___ plays with me!","items":[["Daddy","爸爸"],["Mommy","妈妈"],["My friends","朋友们"],["Grandpa","爷爷"],["My cousin","表哥"],["The teacher","老师"]]}]},
+  {lv:1, t:'帮我拿一下', s:[{"q":"What do you need?","a":"Please pass me the ___ !","items":[["cup","杯子"],["spoon","勺子"],["bowl","碗"],["chopsticks","筷子"],["plate","盘子"],["napkin","纸巾"]]},{"q":"What do you eat with?","a":"I eat with ___ !","items":[["a spoon","勺子"],["chopsticks","筷子"],["a fork","叉子"],["a bowl","碗"],["my hands","我的手"],["a napkin","纸巾"]]}]},
+  {lv:1, t:'天上的朋友', s:[{"q":"What do you see in the sky?","a":"I see the ___ !","items":[["moon","月亮"],["stars","星星"],["sun","太阳"],["clouds","云"],["kites","风筝"],["birds","鸟"]]},{"q":"What shines at night?","a":"The ___ shines at night!","items":[["moon","月亮"],["stars","星星"],["street lights","路灯"],["fireflies","萤火虫"],["a plane","飞机"],["a rocket","火箭"]]}]},
+  {lv:1, t:'晚安物件', s:[{"q":"Who do you say goodnight to?","a":"Goodnight, my ___ !","items":[["teddy bear","泰迪熊"],["doll","娃娃"],["pillow","枕头"],["book","书"],["robot","机器人"],["blanket","小被子"]]},{"q":"What do you do before sleeping?","a":"I ___ before sleeping!","items":[["hug mommy","抱抱妈妈"],["close my eyes","闭眼睛"],["drink milk","喝牛奶"],["hear a story","听故事"],["dream sweet dreams","做好梦"],["count stars","数星星"]]}]},
+  {lv:1, t:'现在几点', s:[{"q":"What time is it?","a":"It is ___ o clock!","items":[["one","一点"],["two","两点"],["six","六点"],["nine","九点"],["five","五点"],["eight","八点"]]},{"q":"When do you get up?","a":"I get up at ___ !","items":[["seven","七点"],["seven thirty","七点半"],["six thirty","六点半"],["eight","八点"],["half past six","六点半"],["five","五点"]]}]},
+  {lv:1, t:'最爱的书', s:[{"q":"What book do you like?","a":"I like the ___ book!","items":[["dinosaur","恐龙"],["car","汽车"],["animal","动物"],["story","故事"],["space","太空"],["sea","海洋"]]},{"q":"What is in the story?","a":"There is a ___ in the story!","items":[["dragon","龙"],["rabbit","兔子"],["magic hat","魔法帽"],["big tree","大树"],["little star","小星星"],["brave boy","勇敢的男孩"]]}]},
+  {lv:1, t:'饼干形状', s:[{"q":"What shape is it?","a":"It is a ___ !","items":[["circle","圆形"],["square","方形"],["star","星形"],["heart","心形"],["triangle","三角形"],["diamond","菱形"]]},{"q":"Which one do you want to eat?","a":"I want the ___ one!","items":[["round","圆的"],["square","方的"],["star","星形的"],["heart","心形的"],["triangle","三角的"],["big","大大的"]]}]},
+  {lv:2, t:'农场动物', s:[{"q":"What do you like on the farm?","a":"I like the ___ !","items":[["pig","小猪"],["cow","奶牛"],["horse","马"],["goose","鹅"],["sheep","绵羊"],["duck","鸭子"]]},{"q":"What does the cow give us?","a":"The cow gives us ___ !","items":[["milk","牛奶"],["cheese","奶酪"],["butter","黄油"],["yogurt","酸奶"],["cream","奶油"],["big hugs","大大的拥抱"]]},{"q":"Where do the animals sleep?","a":"They sleep in the ___ !","items":[["barn","谷仓"],["henhouse","鸡舍"],["field","田野"],["shed","棚子"],["grass","草地"],["straw","干草"]]}]},
+  {lv:2, t:'校园找一找', s:[{"q":"What do you like at school?","a":"I like the ___ !","items":[["playground","操场"],["library","图书馆"],["music class","音乐课"],["art class","美术课"],["teacher","老师"],["school bus","校车"]]},{"q":"What do you do in class?","a":"I ___ in class!","items":[["sing songs","唱歌"],["draw pictures","画画"],["read books","读书"],["count numbers","数数"],["listen","听讲"],["play games","做游戏"]]},{"q":"Who is your friend?","a":"___ is my friend!","items":[["Lily","莉莉"],["Tom","汤姆"],["The tall boy","高个子男孩"],["The girl with a bow","扎蝴蝶结的女孩"],["Everyone","大家"],["My deskmate","同桌"]]}]},
+  {lv:2, t:'餐桌摆台', s:[{"q":"What is on the table?","a":"A ___ is on the table!","items":[["bowl","碗"],["plate","盘子"],["spoon","勺子"],["cup","杯子"],["napkin","纸巾"],["chopsticks","筷子"]]},{"q":"What do you eat with?","a":"I eat with ___ !","items":[["chopsticks","筷子"],["a spoon","勺子"],["a fork","叉子"],["a bowl","碗"],["my mouth","我的嘴"],["a plate","盘子"]]},{"q":"What do you do before eating?","a":"I ___ before eating!","items":[["wash my hands","洗手"],["say thank you","说谢谢"],["serve the rice","盛饭"],["sit down","坐好"],["wait for mommy","等妈妈"],["smell the food","闻香味"]]}]},
+  {lv:2, t:'昆虫观察', s:[{"q":"What insect do you see?","a":"I see a ___ !","items":[["butterfly","蝴蝶"],["bee","蜜蜂"],["ant","蚂蚁"],["ladybug","瓢虫"],["dragonfly","蜻蜓"],["cricket","蟋蟀"]]},{"q":"Where do ants live?","a":"Ants live in the ___ !","items":[["ground","土里"],["grass","草丛"],["wood","木头"],["sand","沙子里"],["walls","墙缝"],["garden","花园"]]},{"q":"What do bees make?","a":"Bees make ___ !","items":[["honey","蜂蜜"],["honeycombs","蜂巢"],["beeswax","蜂蜡"],["buzzing sounds","嗡嗡声"],["a happy garden","开心的花园"],["sweet smells","甜甜的香味"]]}]},
+  {lv:2, t:'运动项目', s:[{"q":"What sport do you like?","a":"I like ___ !","items":[["swimming","游泳"],["running","跑步"],["riding","骑车"],["kicking ball","踢球"],["jumping rope","跳绳"],["hopping","单脚跳"]]},{"q":"What do you play ball with?","a":"I play ball with my ___ !","items":[["hands","双手"],["feet","双脚"],["head","头"],["bat","球棒"],["racket","球拍"],["buddy","小伙伴"]]},{"q":"Where do you do sports?","a":"I do sports ___ !","items":[["at the park","在公园"],["at home","在家"],["at school","在学校"],["on the grass","在草地上"],["in the gym","在体育馆"],["everywhere","到处"]]}]},
+  {lv:2, t:'帮妈妈买菜', s:[{"q":"What do we need to buy?","a":"We need ___ !","items":[["tomatoes","西红柿"],["potatoes","土豆"],["carrots","胡萝卜"],["cabbages","白菜"],["eggs","鸡蛋"],["milk","牛奶"]]},{"q":"What do we carry?","a":"We carry a ___ !","items":[["basket","菜篮子"],["bag","袋子"],["trolley","小推车"],["backpack","背包"],["box","箱子"],["big bag","大袋子"]]},{"q":"Who pays for the food?","a":"___ pays for the food!","items":[["Mommy","妈妈"],["Daddy","爸爸"],["Grandma","奶奶"],["Grandpa","爷爷"],["My auntie","阿姨"],["I","我"]]}]},
+  {lv:2, t:'职业梦想', s:[{"q":"What do you want to be?","a":"I want to be a ___ !","items":[["doctor","医生"],["teacher","老师"],["police officer","警察"],["pilot","飞行员"],["astronaut","宇航员"],["fireman","消防员"]]},{"q":"What does a doctor do?","a":"A doctor helps ___ !","items":[["sick people","生病的人"],["children","孩子们"],["grandmas and grandpas","爷爷奶奶们"],["everyone","所有人"],["me","我"],["patients","病人"]]},{"q":"Where does a pilot work?","a":"A pilot works in the ___ !","items":[["sky","天上"],["airport","机场"],["cockpit","驾驶室"],["clouds","云层"],["airplane","飞机上"],["world","全世界"]]}]},
+  {lv:2, t:'快乐源泉', s:[{"q":"What makes you happy?","a":"___ makes me happy!","items":[["Playing games","玩游戏"],["Story time","故事时间"],["My family","家人"],["Yummy food","好吃的"],["A sunny day","晴天"],["Riding my bike","骑车兜风"]]},{"q":"What makes mommy happy?","a":"___ makes mommy happy!","items":[["A hug from me","我的拥抱"],["Good manners","有礼貌"],["Helping hands","帮帮忙"],["My drawings","我的画"],["Telling stories","讲故事"],["A big kiss","一个大大的吻"]]},{"q":"What do you do when you are sad?","a":"I ___ when I am sad!","items":[["talk to mommy","跟妈妈说"],["hug my teddy","抱抱泰迪"],["take a deep breath","深呼吸"],["play with toys","玩玩具"],["have some milk","喝点奶"],["go outside","出去走走"]]}]}
+];
+function daySeed() {
+  var s = 0, str = todayStr();
+  for (var i=0;i<str.length;i++) s = (s*31 + str.charCodeAt(i)) % 997;
+  return s;
+}
+function engCountToday(){ return (state.eng && state.eng.count) || 0; }
+function engAdvUnlocked() {   /* 基础场景（27 个）全部点亮 → 进阶解锁；兼容旧版 10 基础的解锁记录 */
+  if (state.eng && state.eng.advUnlockLegacy) return true;
+  if (!(state.eng && state.eng.done)) return false;
+  for (var i=0;i<ENG_SCENES.length;i++) {
+    if (ENG_SCENES[i].lv===1 && !state.eng.done[i]) return false;
+  }
+  return true;
+}
+function engPool() {   /* 选场景：优先没演过的；全演过 → 全库复习轮 */
+  var pool = [];
+  var adv = engAdvUnlocked();
+  for (var i=0;i<ENG_SCENES.length;i++) {
+    var s = ENG_SCENES[i];
+    if (s.lv===2 && !adv) continue;
+    var dn = (state.eng.done && state.eng.done[i]) || 0;
+    if (dn === 0) pool.push(i);
+  }
+  if (!pool.length) { for (var k=0;k<ENG_SCENES.length;k++) pool.push(k); }
+  return pool;
+}
+var curEngScene = null, curEngIdx = 0, curEngLines = [];
+var engProgress = {idx:-1, pat:0, round:0};   /* 当前练到第几个句型、第几轮（渐进显示） */
+function renderEngPage() {
+  var el = document.getElementById('engPage');
+  if (!el) return;
+  var n = engCountToday();
+  var unlocked = engAdvUnlocked();
+  var engMoney = 0;
+  for (var i2=0;i2<state.scores.length;i2++) {
+    var e2 = state.scores[i2];
+    if (e2.d===todayStr() && e2.cat==='eng') engMoney += e2.pts;
+  }
+  var html = '<div class="stat-bar">🗣️ 今日已完成 <b>'+n+'/2</b> 个场景 · 英语专项收入 ¥'+engMoney+' · 今日总工资 ¥'+earnedToday()+'</div>';
+  var todayList = (state.eng && state.eng.today) || [];
+  if (todayList.length) {
+    html += '<div class="card" style="padding:10px 14px; margin-bottom:14px"><h2 style="margin-bottom:6px">📖 今日回顾（点卡片复习）</h2><div class="plist">';
+    for (var ti=0; ti<todayList.length; ti++) {
+      var tIdx = todayList[ti];
+      var scR = ENG_SCENES[tIdx];
+      html += '<div class="pitem" onclick="openEngReview('+tIdx+')"><span class="pi-e">🎬</span>'
+        + '<span class="pi-t">'+scR.t+'</span>'
+        + '<span class="pi-d">'+scR.s.length+' 个句型 · 换词练习，点开复习</span>'
+        + '<span class="pi-s">📖</span></div>';
+    }
+    html += '</div></div>';
+  }
+  if (n >= 2) {
+    html += '<div class="done-banner" style="margin-bottom:14px">🎉 今日 2 个场景全部完成'+(engMoney>0 ? '，英语赚了 ¥'+engMoney+'！' : '（今日工资此前已领满 ¥'+KID_CAP+'，这两场按加演记录，未占工资）')+'<br><span style="font-size:12px;font-weight:normal">明天会换新场景；想回看今天聊了什么，点上方「今日回顾」卡片 📖</span></div>';
+  } else {
+    var pool = engPool();
+    var isPicked = state.eng.pick != null && ENG_SCENES[state.eng.pick];
+    if (isPicked) {
+      curEngIdx = state.eng.pick;
+    } else {
+      curEngIdx = pool[(daySeed() + n*7) % pool.length];
+    }
+    var sc = ENG_SCENES[curEngIdx];
+    curEngScene = sc;
+    if (!state.eng.progress || state.eng.progress.idx !== curEngIdx) { state.eng.progress = {idx: curEngIdx, pat: 0, round: 0}; save(); }
+    engProgress = state.eng.progress;
+    var price = sc.lv===2 ? 6 : 5;
+    var CN = ['一','二','三'];
+    var totalRounds = 0;
+    for (var pc=0; pc<sc.s.length; pc++) totalRounds += sc.s[pc].items.length;
+    var doneCount = 0;
+    for (var pd=0; pd<engProgress.pat && pd<sc.s.length; pd++) doneCount += sc.s[pd].items.length;
+    if (engProgress.pat < sc.s.length) doneCount += Math.min(engProgress.round, sc.s[engProgress.pat].items.length);
+    var allDone = engProgress.pat >= sc.s.length;
+    html += '<div class="card" style="border:2.5px solid #2980b9; background:#f7fbff; margin-bottom:14px"><h2>🎬 场景 '+(n+1)+'：「'+sc.t+'」'
+      + (sc.lv===2 ? '<span style="font-size:12px;color:#e67e22">（进阶 ¥6）</span>' : '<span style="font-size:12px;color:#8a97a6">（基础 ¥5）</span>')
+      + (isPicked ? '<span style="font-size:12px;color:#5b8def">（🎯 自选）</span>' : '<span style="font-size:12px;color:#8a97a6">（今日推荐）</span>') + '</h2>'
+      + '<div class="mq-prog">进度 ✅ '+doneCount+' / '+totalRounds+' 句（练完一句才出下一句）</div>'
+      + '<div class="sub" style="text-align:center; margin:-4px 0 2px">'+(isPicked?'🎯 这是你自己选的场景':'想自己挑场景？去下方图鉴点任意卡片 → 「🎯 就练这个」')+'</div>';
+    curEngLines = [];
+    for (var p=0; p<sc.s.length && p<=engProgress.pat; p++) {
+      var pat = sc.s[p];
+      if (p < engProgress.pat) {   /* 已完成的句型：一行小结 */
+        html += '<div class="sub" style="margin:6px 0 0; color:#1e8449">📘 句型'+(CN[p]||p+1)+' ✅ 已完成 '+pat.items.length+' 轮 · '+pat.q+'</div>';
+        continue;
+      }
+      /* 当前句型：问/答 + 当前轮 */
+      var li0 = curEngLines.length;
+      curEngLines.push(pat.q); curEngLines.push(pat.a);
+      html += '<div class="cat-title">📘 句型'+(CN[p]||p+1)+'（换词 '+pat.items.length+' 轮）</div>'
+        + '<div class="eng-line"><span class="eng-who">🔵 问</span><span class="eng-txt" style="color:#2471a3">'+pat.q+'</span><span class="eng-spk" onclick="speakEng('+li0+')">🔊</span></div>'
+        + '<div class="eng-line"><span class="eng-who">🟢 答</span><span class="eng-txt" style="color:#1e8449">'+pat.a+'</span><span class="eng-spk" onclick="speakEng('+(li0+1)+')">🔊</span></div>'
+        + '<div class="sub" style="margin:-4px 0 2px">✨ 看词换句：说完点下面的按钮，才出下一轮</div>';
+      for (var r=0; r<pat.items.length; r++) {
+        var en = pat.items[r][0], zh = pat.items[r][1];
+        if (r < engProgress.round) {
+          html += '<div class="sub" style="margin:0; color:#1e8449">✅ 第'+(r+1)+'轮 '+pat.a.replace('___',en)+'（'+zh+'）</div>';
+        } else if (r === engProgress.round) {
+          var sent = pat.a.replace('___', en);
+          var spk = curEngLines.length;
+          curEngLines.push(sent);
+          html += '<div class="eng-line"><span class="eng-who">🟢 第'+(r+1)+'轮</span>'
+            + '<span class="eng-txt" style="color:#1e8449">'+sent+' <span style="font-size:11px;color:#999;font-weight:normal">（'+zh+'）</span></span>'
+            + '<span class="eng-spk" onclick="speakEng('+spk+')">🔊</span></div>';
+        }
+      }
+      break;   /* 只展开当前句型，后续句型等完成后再出 */
+    }
+    if (allDone) {
+      html += '<div class="done-banner" style="margin-top:10px">🎉 全部 '+totalRounds+' 句都练完啦！</div>'
+        + '<button class="btn btn-blue" onclick="engDone()">✅ 领取场景奖金 +¥'+price+'！</button></div>';
+    } else {
+      var pat = sc.s[engProgress.pat];
+      var lastRound = engProgress.round === pat.items.length - 1;
+      var lastPat = engProgress.pat === sc.s.length - 1;
+      var label = lastRound ? (lastPat ? '🎉 最后一句说完了！' : '✅ 这组说完了，进入句型'+(CN[engProgress.pat+1]||'')+' →')
+                            : '✅ 这轮说完了，下一轮 →';
+      html += '<button class="btn btn-green" onclick="engNextRound()">'+label+'</button></div>';
+    }
+  }
+  if (!unlocked) {
+    html += '<div class="pk-line" style="background:#fff3dd; color:#a06a00; margin-bottom:14px">🔒 集齐基础 27 个场景 → 解锁「进阶场景」：台词更长，每个 ¥6！</div>';
+  } else if (n < 2) {
+    html += '<div class="pk-line" style="background:#fff3dd; color:#a06a00; margin-bottom:14px">🟠 进阶场景已解锁，每个 ¥6，台词更长更过瘾！</div>';
+  }
+  var doneKinds = 0;
+  var gal = '<div class="card"><h2>🗂️ 场景图鉴</h2>'
+    + '<div class="sub">演过一次就点亮。基础 27 个集齐 → 解锁进阶 18 个；45 个全亮后进入复习轮，全库轮换天天演天天赚，永远玩不空！点卡片随时复习 📖</div>';
+  var groups = [ {lv:1, title:'🟢 基础场景 ¥5/个 · 共 27 个（点图标直接开练 · 右上角 📖 看内容）'}, {lv:2, title:(unlocked?'🟠 进阶场景 ¥6/个 · 共 18 个':'🔒 进阶场景（集齐基础解锁）')} ];
+  for (var gi=0; gi<groups.length; gi++) {
+    var grp = groups[gi];
+    gal += '<div class="cat-title">'+grp.title+'</div><div class="sticker-grid">';
+    for (var g=0; g<ENG_SCENES.length; g++) {
+      var sc2 = ENG_SCENES[g];
+      if (sc2.lv !== grp.lv) continue;
+      var dn = (state.eng.done && state.eng.done[g]) || 0;
+      var canSee = grp.lv===1 || unlocked || dn > 0;
+      var isCur = (g === curEngIdx) && canSee;
+      if (dn > 0) doneKinds++;
+      if (canSee) {
+        gal += '<div class="sticker'+(dn?'':' off')+(isCur?' sel':'')+'" style="cursor:pointer" onclick="pickEng('+g+')">'
+          + (isCur ? '<span class="st-sel">🎯练习中</span>' : '')
+          + '<div class="s-e">'+(isCur?'🎯':(dn?'🎬':'📖'))+'</div>'
+          + '<div class="s-n">'+sc2.t+(dn>1?' ×'+dn:'')+'</div>'
+          + '<span class="st-rev" onclick="event.stopPropagation(); openEngReview('+g+')">📖</span></div>';
+      } else {
+        gal += '<div class="sticker off"><div class="s-e">🔒</div><div class="s-n">'+sc2.t+'</div></div>';
+      }
+    }
+    gal += '</div>';
+  }
+  gal += '<div class="sub" style="text-align:center; margin-top:14px; padding-top:10px; border-top:1px dashed #e3eaf3">点图标 = 选定开练（场景卡联动替换）· 点 📖 = 只看内容不切换 · 已点亮 '+doneKinds+' / '+ENG_SCENES.length+' 个'+(doneKinds>=ENG_SCENES.length?' 🎉 全集齐，进入复习轮！':'')+'</div></div>';
+  el.innerHTML = html + gal;
+}
+function engNextRound() {   /* 当前轮说完 → 显示下一轮；一组说完 → 下一个句型（自动朗读新内容） */
+  var sc = curEngScene;
+  if (!sc || engProgress.idx !== curEngIdx) return;
+  var pat = sc.s[engProgress.pat];
+  if (!pat) return;
+  var wasPat = engProgress.pat;
+  engProgress.round++;
+  if (engProgress.round >= pat.items.length) { engProgress.pat++; engProgress.round = 0; }
+  save();   /* 练习进度落盘，刷新页面不丢 */
+  sndOk();
+  renderEngPage();
+  /* 自动朗读：新句型完整读「问 → 答首句」（排队不截断），同句型只读新句子；全部练完不再朗读 */
+  if (engProgress.pat >= sc.s.length) return;
+  var np = sc.s[engProgress.pat];
+  if (engProgress.pat !== wasPat) {
+    speakEngText(np.q);
+    speakEngText(np.a.replace('___', np.items[0][0]), true);
+  } else {
+    speakEngText(np.a.replace('___', np.items[engProgress.round][0]));
+  }
+}
+function speakEngText(text, noCancel) {   /* 单句朗读；noCancel=true 时排队接在后面，不打断正在读的句子 */
+  try {
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'en-US'; u.rate = 0.8;
+    if (!noCancel) speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+  } catch(e) { toast('这个浏览器不支持发音，爸妈直接念吧 😊'); }
+}
+function speakEng(i) {   /* 读英语页当前句 */
+  if (curEngLines[i]) speakEngText(curEngLines[i]);
+}
+var reviewLines = [];
+function openEngReview(idx) {   /* 复习任意场景：全部句型 + 换词轮 */
+  var sc = ENG_SCENES[idx];
+  reviewLines = [];
+  var lv = sc.lv===2 ? '（进阶 ¥6）' : '（基础 ¥5）';
+  var CNR = ['一','二','三'];
+  var html = '<h2>📖 复习：「'+sc.t+'」<span style="font-size:12px;color:#8a97a6">'+lv+' · '+sc.s.length+' 个句型</span></h2>';
+  for (var p=0; p<sc.s.length; p++) {
+    var pat = sc.s[p];
+    var li0 = reviewLines.length;
+    reviewLines.push(pat.q); reviewLines.push(pat.a);
+    html += '<div class="cat-title">📘 句型'+(CNR[p]||p+1)+'</div>'
+      + '<div class="eng-line"><span class="eng-who">🔵 问</span><span class="eng-txt" style="color:#2471a3">'+pat.q+'</span><span class="eng-spk" onclick="speakReview('+li0+')">🔊</span></div>'
+      + '<div class="eng-line"><span class="eng-who">🟢 答</span><span class="eng-txt" style="color:#1e8449">'+pat.a+'</span><span class="eng-spk" onclick="speakReview('+(li0+1)+')">🔊</span></div>';
+    for (var r=0; r<pat.items.length; r++) {
+      var sent = pat.a.replace('___', pat.items[r][0]);
+      reviewLines.push(sent);
+      html += '<div class="eng-line"><span class="eng-who">🟢 第'+(r+1)+'轮</span>'
+        + '<span class="eng-txt" style="color:#1e8449">'+sent+'<span style="font-size:11px;color:#999;font-weight:normal">（'+pat.items[r][1]+'）</span></span>'
+        + '<span class="eng-spk" onclick="speakReview('+(li0+2+r)+')">🔊</span></div>';
+    }
+  }
+  var dn = (state.eng && state.eng.done && state.eng.done[idx]) || 0;
+  var canPick = engCountToday() < 2 && (sc.lv===1 || engAdvUnlocked()) && idx !== curEngIdx;
+  html += '<div class="sub" style="text-align:center; margin-top:8px">本场景已练 '+dn+' 次 · 复习不计钱不扣钱</div>'
+    + (canPick ? '<button class="btn btn-blue" onclick="pickEng('+idx+')">🎯 就练这个场景！</button>' : '')
+    + (dn > 1 ? '<button class="btn btn-gray" onclick="resetOneEng('+idx+')">🧹 只重置这个场景：重复次数清为 1（保留点亮）</button>' : '');
+  document.getElementById('engReviewBody').innerHTML = html;
+  document.getElementById('engMask').classList.add('show');
+}
+function engDoneCount(sc, prog) {   /* 某场景按进度已练句数 */
+  var c = 0;
+  for (var p=0;p<sc.s.length;p++) { if (p < prog.pat) c += sc.s[p].items.length; }
+  if (prog.pat < sc.s.length) c += Math.min(prog.round, sc.s[prog.pat].items.length);
+  return c;
+}
+function pickEng(idx) {   /* 图鉴点图标 → 直接选定，场景卡联动替换 */
+  if (engCountToday() >= 2) { toast('今天 2 个场景已用完，明天再来 🎬'); return; }
+  var sc = ENG_SCENES[idx];
+  if (sc.lv===2 && !engAdvUnlocked()) { toast('进阶场景还没解锁哦，先点亮基础 27 个'); return; }
+  if (idx === curEngIdx) { toast('「'+sc.t+'」已经在练啦，往下看就是'); window.scrollTo({top:0, behavior:'smooth'}); return; }
+  var prog = state.eng.progress;   /* 防误触：当前场景有未领奖进度时，切换需确认 */
+  if (prog && prog.idx === curEngIdx) {
+    var dc = engDoneCount(ENG_SCENES[curEngIdx], prog);
+    if (dc > 0 && !confirm('当前场景已练 '+dc+' 句还没领奖，切换会丢弃这段进度。确定切换吗？')) return;
+  }
+  state.eng.pick = idx;
+  save();
+  closeEngReview();
+  renderEngPage(); renderWage();
+  window.scrollTo({top:0, behavior:'smooth'});
+  sndOk();
+  toast('🎯 已选定「'+sc.t+'」，开始句型一！');
+}
+function resetOneEng(idx) {   /* 重置单个场景：重复次数归 1，点亮/解锁保留 */
+  if (!(state.eng && state.eng.done && state.eng.done[idx] > 1)) { toast('这个场景的重复次数已经是 1，不用重置'); return; }
+  state.eng.done[idx] = 1;
+  save(); renderEngPage(); closeEngReview();
+  toast('🧹 「'+ENG_SCENES[idx].t+'」重复次数已清为 1（点亮保留）');
+}
+function speakReview(i) { if (reviewLines[i]) speakEngText(reviewLines[i]); }
+function speakEngAll() {   /* 连读：问 → 句型 → 每轮句子 */
+  try {
+    speechSynthesis.cancel();
+    for (var i=0;i<reviewLines.length;i++) {
+      var u = new SpeechSynthesisUtterance(reviewLines[i]);
+      u.lang = 'en-US'; u.rate = 0.8;
+      speechSynthesis.speak(u);
+    }
+  } catch(e) { toast('这个浏览器不支持连读 😊'); }
+}
+function closeEngReview(){ document.getElementById('engMask').classList.remove('show'); }
+function restartToday() {   /* 重新开始今天：当日打卡/任务/英语/今日得分清零，历史资产全部保留 */
+  if (!confirm('重新开始今天？\n\n清零（仅今天）：今晚小火车、当日任务轮次、家长打卡、今日英语场景、今日赚的钱和星星。\n存钱罐会同步退回「今天赚到的钱」，只保留之前攒下的部分。\n保留：贴纸、图鉴点亮、成就、字卡、口算历史。\n\n确定吗？')) return;
+  var t = todayStr(), back = 0;
+  for (var bi=0; bi<state.scores.length; bi++) { if (state.scores[bi].d === t) back += (state.scores[bi].pts||0); }
+  state.extra.total = Math.max(0, state.extra.total - back);   /* 钱同步退回：否则“重开今天”＝无限刷钱 */
+  state.routine = freshRoutine();
+  state.tasks = {date: t, done: {}, gift: null};
+  state.parent = {date: t, items: {}};
+  state.scores = state.scores.filter(function(e){ return e.d !== t; });
+  if (state.eng) { state.eng.count = 0; state.eng.today = []; state.eng.pick = null; state.eng.progress = null; }
+  for (var rc=0; rc<state.chars.length; rc++) { state.chars[rc].dayEarn = 0; }
+  state.week.stars[todayKey()] = 0;
+  save();
+  curTask = null; ratingTier = 0; mq = null;
+  renderRoutine(); renderTask(); renderWall(); renderMath(); renderQuiz(); renderEngPage(); renderWeek();
+  closeParent();
+  toast('🔄 今天已重新开始，从晚餐出发 🚂');
+}
+function engDone() {
+  if (engCountToday() >= 2) return;
+  var wasUnlocked = engAdvUnlocked();
+  var pay = curEngScene && curEngScene.lv===2 ? 6 : 5;   /* 英语专项奖金：独立于每日封顶，做完成立到账 */
+  state.eng.count = engCountToday() + 1;
+  state.eng.pick = null;   /* 领奖后清自选，防止同一场景重复领钱 */
+  state.eng.done[curEngIdx] = (state.eng.done[curEngIdx]||0) + 1;
+  if (!state.eng.today) state.eng.today = [];
+  state.eng.today.push(curEngIdx);
+  logScore('eng', '英语场景', pay);
+  save(); renderEngPage(); renderWage();
+  if (!wasUnlocked && engAdvUnlocked()) { sndLevel(); toast('🎉 基础 27 个场景集齐！「进阶场景」解锁，每个 ¥6，快去看看！'); return; }
+  sndCoin();
+  toast('🗣️ 场景完成 +¥'+pay+'（专项奖金）！'+(state.eng.count===1 ? '再来一个场景更棒' : '今天英语收官！'));
+}
+
+/* ================= 字库参考（一~三年级常用字，点选即加） ================= */
+var CHAR_BANK = {"1":[["一","一个"],["二","二十"],["三","三个"],["四","四个"],["五","五个"],["六","六个"],["七","七个"],["八","八个"],["九","九个"],["十","十个"],["百","百合"],["千","千万"],["万","万里"],["元","一元"],["角","一角"],["分","分开"],["大","大小"],["小","小手"],["多","多少"],["少","多少"],["上","上学"],["下","下雨"],["前","前面"],["后","后面"],["左","左手"],["右","右手"],["里","里面"],["外","外面"],["高","高低"],["低","低头"],["长","长短"],["短","短裤"],["远","远方"],["近","附近"],["东","东西"],["西","西瓜"],["南","南瓜"],["北","北方"],["人","大人"],["口","口水"],["手","小手"],["足","手足"],["目","目光"],["耳","耳朵"],["牙","牙齿"],["舌","舌头"],["毛","毛发"],["皮","皮肤"],["骨","骨头"],["心","开心"],["头","头发"],["脸","洗脸"],["洗","洗手"],["天","天空"],["地","大地"],["日","日子"],["月","月亮"],["星","星星"],["光","阳光"],["云","白云"],["风","大风"],["雨","下雨"],["雪","下雪"],["雷","打雷"],["电","电灯"],["雾","大雾"],["霜","下霜"],["冰","冰块"],["山","大山"],["石","石头"],["田","水田"],["土","泥土"],["沙","沙子"],["水","喝水"],["火","火车"],["木","木头"],["禾","禾苗"],["米","大米"],["豆","豆子"],["瓜","西瓜"],["果","水果"],["菜","青菜"],["花","花朵"],["草","草地"],["叶","树叶"],["树","大树"],["根","树根"],["芽","发芽"],["种","种树"],["春","春天"],["夏","夏天"],["秋","秋天"],["冬","冬天"],["爸","爸爸"],["妈","妈妈"],["爷","爷爷"],["奶","奶奶"],["哥","哥哥"],["姐","姐姐"],["弟","弟弟"],["妹","妹妹"],["叔","叔叔"],["姨","阿姨"],["儿","儿子"],["女","女儿"],["娃","娃娃"],["婆","外婆"],["家","回家"],["朋","朋友"],["友","朋友"],["男","男孩"],["你","你好"],["我","我们"],["他","他们"],["她","她们"],["它","它们"],["吃","吃饭"],["喝","喝水"],["玩","玩耍"],["睡","睡觉"],["起","起床"],["坐","坐好"],["立","立正"],["走","走路"],["跑","跑步"],["跳","跳绳"],["爬","爬山"],["飞","飞机"],["落","落叶"],["来","回来"],["去","来去"],["出","出门"],["入","入学"],["开","开门"],["关","关门"],["问","问好"],["答","回答"],["说","说话"],["话","电话"],["听","听话"],["看","看见"],["想","想念"],["写","写字"],["画","画画"],["读","读书"],["唱","唱歌"],["叫","叫声"],["吹","吹风"],["打","打鼓"],["拍","拍球"],["扔","扔掉"],["接","接住"],["拿","拿来"],["放","放学"],["收","收拾"],["找","找到"],["让","让开"],["帮","帮忙"],["忙","帮忙"],["早","早上"],["午","中午"],["晚","晚上"],["夜","夜晚"],["晨","早晨"],["昨","昨天"],["今","今天"],["明","明天"],["年","过年"],["时","时间"],["秒","秒表"],["好","好人"],["坏","坏人"],["对","对错"],["错","对错"],["是","是的"],["非","是非"],["有","有心"],["无","无用"],["在","现在"],["再","再见"],["又","又大又圆"],["才","才能"],["就","就是"],["都","都来"],["也","也许"],["很","很好"],["最","最好"],["太","太阳"],["更","更好"],["真","真话"],["假","假话"],["空","天空"],["满","满意"],["红","红色"],["黄","黄色"],["蓝","蓝色"],["绿","绿色"],["白","白色"],["黑","黑色"],["灰","灰色"],["粉","粉色"],["紫","紫色"],["猫","小猫"],["狗","小狗"],["猪","小猪"],["牛","水牛"],["羊","小羊"],["马","小马"],["兔","白兔"],["鼠","老鼠"],["鸡","小鸡"],["鸭","小鸭"],["鹅","白鹅"],["鸟","小鸟"],["虫","小虫"],["鱼","小鱼"],["虾","小虾"],["象","大象"],["狮","狮子"],["虎","老虎"],["狼","野狼"],["熊","狗熊"],["鹿","小鹿"],["龟","乌龟"],["蛇","毒蛇"],["蛙","青蛙"],["蚁","蚂蚁"],["书","书本"],["本","本子"],["笔","铅笔"],["刀","小刀"],["尺","尺子"],["盒","盒子"],["包","书包"],["纸","白纸"],["板","黑板"],["桌","桌子"],["椅","椅子"],["床","床单"],["门","大门"],["窗","窗口"],["灯","电灯"],["钟","闹钟"],["表","手表"],["伞","雨伞"],["帽","帽子"],["鞋","鞋子"],["袜","袜子"],["衣","衣服"],["裤","裤子"],["裙","裙子"],["碗","碗"],["筷","筷子"],["杯","杯子"],["盘","盘子"],["锅","铁锅"],["勺","勺子"],["叉","叉子"],["瓶","花瓶"],["国","国家"],["城","城市"],["乡","家乡"],["校","学校"],["班","班级"],["组","小组"],["课","上课"],["师","老师"],["生","生日"],["先","先生"],["动","动手"],["劳","劳动"],["做","做事"],["工","工人"],["农","农民"],["兵","士兵"],["医","医生"],["力","力气"],["气","生气"],["声","声音"],["吗","好吗"],["吧","好吧"],["啊","好呀"]],"2":[["季","季节"],["闪","闪电"],["虹","彩虹"],["晴","晴天"],["阴","阴天"],["阵","阵雨"],["橙","橙子"],["蚊","蚊子"],["蝇","苍蝇"],["蛛","蜘蛛"],["蚯","蚯蚓"],["蚓","蚯蚓"],["鹤","白鹤"],["鹰","老鹰"],["燕","燕子"],["鸽","鸽子"],["鸦","乌鸦"],["荷","荷花"],["菊","菊花"],["梅","梅花"],["兰","兰花"],["柳","柳树"],["松","松树"],["枫","枫叶"],["园","花园"],["林","森林"],["森","森林"],["桥","小桥"],["路","马路"],["街","街道"],["邻","邻居"],["居","居民"],["村","农村"],["镇","城镇"],["郊","郊外"],["野","野外"],["原","草原"],["坡","山坡"],["洞","山洞"],["泉","泉水"],["溪","小溪"],["河","小河"],["湖","湖水"],["海","大海"],["洋","海洋"],["岛","海岛"],["岸","河岸"],["浪","海浪"],["滩","沙滩"],["湾","海湾"],["扫","扫地"],["拖","拖地"],["抹","抹布"],["擦","擦桌子"],["晒","晒太阳"],["晾","晾衣服"],["挂","挂起来"],["换","换衣服"],["澡","洗澡"],["洒","洒水"],["浇","浇花"],["埋","埋起来"],["搬","搬家"],["抬","抬头"],["提","提水"],["推","推门"],["拉","拉手"],["递","递给"],["捡","捡起"],["挑","挑水"],["抱","抱抱"],["扶","扶起"],["摸","摸头"],["摇","摇头"],["挥","挥手"],["咬","咬一口"],["吞","吞下"],["含","含着"],["吸","吸气"],["吐","吐出来"],["咳","咳嗽"],["背","背书"],["抄","抄写"],["练","练习"],["算","计算"],["数","数数"],["题","题目"],["卷","试卷"],["改","改正"],["查","检查"],["兴","兴奋"],["伤","伤心"],["泪","眼泪"],["怒","发怒"],["惊","吃惊"],["吓","吓人"],["怕","害怕"],["烦","烦恼"],["累","累了"],["饿","饥饿"],["渴","口渴"],["饱","吃饱"],["疼","心疼"],["痒","挠痒"],["酸","酸甜"],["甜","甜美"],["苦","苦瓜"],["辣","辣椒"],["咸","咸菜"],["香","香水"],["臭","臭味"],["软","软糖"],["硬","硬币"],["滑","滑滑梯"],["粗","粗细"],["细","细心"],["厚","厚厚"],["薄","薄薄"],["深","深浅"],["浅","浅浅"],["宽","宽度"],["窄","窄窄"],["严","严格"],["紧","抓紧"],["如","如果"],["意","意见"],["应","应该"],["必","必须"],["需","需要"],["以","以后"],["可","可爱"],["孔","孔雀"],["雀","麻雀"],["雄","雄鹰"]],"3":[["诚","诚实"],["实","果实"],["勇","勇敢"],["敢","敢于"],["骄","骄傲"],["傲","傲慢"],["虚","虚心"],["谦","谦虚"],["环","环保"],["境","环境"],["保","保护"],["护","爱护"],["资","资源"],["源","水源"],["省","节省"],["费","浪费"],["值","值日"],["类","人类"],["型","类型"],["状","形状"],["态","态度"],["科","科学"],["技","技术"],["研","研究"],["究","研究"],["验","实验"],["镜","眼镜"],["望","盼望"],["探","探险"],["索","探索"],["览","浏览"],["馆","图书馆"],["籍","书籍"],["健","健康"],["康","康复"],["纪","纪律"],["规","规定"],["文","文化"],["明","文明"],["化","绿化"],["选","选择"],["择","选择"],["贵","珍贵"],["宝","宝贝"],["藏","宝藏"],["玉","玉石"],["银","银子"],["铜","铜钱"],["铁","铁路"],["钢","钢铁"],["夸","夸奖"],["奖","奖励"],["励","鼓励"],["助","助手"],["力","力量"],["蜜","蜜蜂"],["蜂","蜂蜜"],["蝶","蝴蝶"],["蚁","蚂蚁"],["蚕","蚕宝宝"],["桑","桑叶"],["棉","棉花"],["麻","麻布"],["谷","谷子"],["稻","水稻"],["麦","小麦"],["既","既然"],["及","以及"],["甚","甚至"],["至","至少"],["而","然而"],["且","而且"],["否","否则"],["则","原则"],["凡","非凡"],["篇","一篇"],["段","段落"],["词","词语"],["句","句子"],["章","文章"],["节","节目"],["标","标点"],["剧","京剧"],["演","表演"],["楼","楼房"],["院","医院"],["所","厕所"],["幼","幼儿园"],["宫","宫殿"],["庙","庙会"],["塔","宝塔"],["亭","亭子"]]};
+var bankGrade = 1;
+function charInWall(zi) {
+  for (var i=0;i<state.chars.length;i++) { if (state.chars[i].zi===zi) return true; }
+  return false;
+}
+function wallTodayFor(zi) {   /* 今日某个字赚的钱（从账本重建） */
+  var t = todayStr(), s = 0;
+  for (var i=0;i<state.scores.length;i++) {
+    var e = state.scores[i];
+    if (e.d===t && e.cat==='wall' && (e.label==='认字:'+zi || e.label==='会写:'+zi)) s += e.pts;
+  }
+  return s;
+}
+function quickAddChar(zi, ci) {
+  if (charInWall(zi)) { toast('「'+zi+'」已经在墙上啦'); return; }
+  state.chars.push({zi:zi, ci:ci, zone:'new', addDate: todayStr()});
+  save(); renderWall(); renderBank();
+  sndOk();
+  toast('「'+zi+'」已添加到生字村 🌱');
+}
+function openBank(){ document.getElementById('bankMask').classList.add('show'); renderBank(); }
+function closeBank(){ document.getElementById('bankMask').classList.remove('show'); }
+
+/* ================= 收入明细（今日每一笔 + 每日汇总） ================= */
+function renderDayEarn() {   /* 每日收入记录：最近 7 天，点任何一天看当天明细 */
+  var el = document.getElementById('dayEarnList');
+  if (!el) return;
+  var byDay = {}, days = [];
+  for (var i=0;i<state.scores.length;i++) {
+    var e = state.scores[i];
+    if (byDay[e.d] == null) { byDay[e.d] = 0; days.push(e.d); }
+    byDay[e.d] += e.pts;
+  }
+  days.sort(); days.reverse();
+  var t = todayStr();
+  if (!days.length) { el.innerHTML = '<div class="empty-tip">还没有收入记录，先去完成任务吧 💪</div>'; return; }
+  var html = '';
+  for (var k=0;k<days.length && k<7;k++) {
+    var d = days[k];
+    html += '<div class="pitem" onclick="openMoney(\''+d+'\')"><span class="pi-e">📅</span>'
+      + '<span class="pi-t">'+(d===t?'今天':d)+'</span>'
+      + '<span class="pi-d">点开看这一天每一笔收入</span>'
+      + '<span class="pi-s">¥'+byDay[d]+'</span></div>';
+  }
+  el.innerHTML = html;
+}
+function moneyMeta(cat) {
+  var M = {task:['✏️','任务'], train:['🚂','小火车'], math:['🔢','口算'], wall:['🏰','识字'], gift:['🎁','神秘礼物'], eng:['🗣️','英语场景'], parent:['👨‍💻','家长打卡']};
+  return M[cat] || ['💸','其他'];
+}
+function openMoney(day) {   /* 查看某天的收入明细（不传=今天） */
+  var d = day || todayStr();
+  var todays = [];
+  for (var i=0;i<state.scores.length;i++) { if (state.scores[i].d===d) todays.push(state.scores[i]); }
+  var byCat = {}, total = 0, capped = 0, extraM = 0;
+  for (var j=0;j<todays.length;j++) {
+    var e2 = todays[j];
+    byCat[e2.cat] = (byCat[e2.cat]||0) + e2.pts;
+    total += e2.pts;
+    if (CAP_CATS[e2.cat]) capped += e2.pts; else extraM += e2.pts;   /* 按封顶类别判断：家长打卡/英语不占封顶 */
+  }
+  var html = '<h2>💰 收入明细</h2>'
+    + '<div class="stat-bar">📅 '+(d===todayStr()?'今天':d)+' · 当天收入 <b>¥'+total+'</b><br><span style="font-size:12px">工资封顶部分 ¥'+capped+' ＋ 不占封顶 ¥'+extraM+'（英语专项/家长打卡）</span></div>';
+  html += '<div class="cat-title">📂 分渠道汇总</div><div class="plist">';
+  var any = false;
+  for (var c2 in byCat) {
+    any = true;
+    var mm = moneyMeta(c2);
+    html += '<div class="pitem" style="cursor:default"><span class="pi-e">'+mm[0]+'</span><span class="pi-t">'+mm[1]+'</span><span class="pi-s">+¥'+byCat[c2]+'</span></div>';
+  }
+  html += '</div>' + (any ? '' : '<div class="empty-tip">这天没有收入记录</div>');
+  html += '<div class="cat-title">🧾 每一笔（最新在上）</div>';
+  if (todays.length) {
+    for (var k=todays.length-1;k>=0;k--) {
+      var e3 = todays[k];
+      var m3 = moneyMeta(e3.cat);
+      html += '<div class="rec"><span>'+m3[0]+' '+esc(e3.label)+'</span><span class="s">+¥'+e3.pts+'</span></div>';
+    }
+  } else html += '<div class="empty-tip">暂无记录</div>';
+  document.getElementById('moneyBody').innerHTML = html;
+  document.getElementById('moneyMask').classList.add('show');
+}
+function closeMoney(){ document.getElementById('moneyMask').classList.remove('show'); }
+function setBankGrade(g){ bankGrade=g; renderBank(); }
+function renderBank() {
+  var names = {1:'一年级',2:'二年级',3:'三年级'};
+  var order = [1,2,3];
+  var chips = '';
+  for (var i=0;i<order.length;i++) {
+    chips += '<span class="chip'+(bankGrade===order[i]?' sel':'')+'" onclick="setBankGrade('+order[i]+')">'+names[order[i]]+' · '+CHAR_BANK[order[i]].length+' 字</span>';
+  }
+  document.getElementById('bankGrades').innerHTML = chips;
+  var list = CHAR_BANK[bankGrade] || [];
+  var out = '';
+  for (var k=0;k<list.length;k++) {
+    var zi = list[k][0], ci = list[k][1];
+    var inWall = charInWall(zi);
+    out += '<div class="bank-chip'+(inWall?' in':'')+'" onclick="quickAddChar(\''+zi+'\',\''+ci+'\')">'
+      + '<div class="zi">'+zi+'</div><div class="ci">'+ci+'</div></div>';
+  }
+  document.getElementById('bankGrid').innerHTML = out;
+}
+
+/* ================= 识字墙 ================= */
+var curChar = -1;
+function renderWall() {
+  var old = 0, htmlN = '', htmlO = '';
+  for (var i=0;i<state.chars.length;i++) {
+    var c = state.chars[i];
+    var card = '<div class="char-card" onclick="openChar('+i+')">'
+      + ((c.dayEarn||0) > 0 ? '<div class="money">💰¥'+c.dayEarn+'</div>' : '')
+      + '<div class="zi">'+esc(c.zi)+'</div>'
+      + (c.ci?'<div class="ci">'+esc(c.ci)+'</div>':'')
+      + (c.zone==='old' && c.learnDate ? '<div class="ld">📅 '+esc(c.learnDate.slice(5))+' 学会</div>' : '')
+      + '</div>';
+    if (c.zone==='old') { old++; htmlO += card; }
+    else htmlN += card;
+  }
+  document.getElementById('gridNew').innerHTML = htmlN || '<div class="empty-tip">还没有新字，从上面添加第一个吧 ✏️</div>';
+  document.getElementById('gridOld').innerHTML = htmlO || '<div class="empty-tip">学会的字会搬到这里 🏰</div>';
+
+  var next = MILES[MILES.length-1]+1;
+  for (var m=0;m<MILES.length;m++) { if (old < MILES[m]) { next = MILES[m]; break; } }
+  var tip = old >= 60 ? '🏆 城堡大赢家！你就是识字小达人～'
+    : '认识 '+next+' 个字 = ' + (next===10?'种下一棵小树 🌱':next===20?'开出一朵花 🌸':next===40?'升级识字小达人 🎖️':'城堡大赢家 🏆');
+  document.getElementById('wallStat').innerHTML =
+    '⭐ 我已经认识 <b>'+old+'</b> 个字啦！&nbsp; ' + tip
+    + '<br>💰 今日识字收入 <b>¥'+catToday('wall')+'</b> <span style="font-size:11px;color:#98a6b5">（会认搬家 +¥1/字 · 会写认证 +¥2/字 · 计入今日工资封顶）</span>';
+}
+function addChar() {
+  var zi = document.getElementById('inZi').value.trim();
+  if (!zi) { toast('先写一个字哦'); return; }
+  if (charInWall(zi)) { toast('「'+zi+'」已经在墙上啦，同一个字不用重复添加 😊'); return; }
+  var tip = document.getElementById('inTip').value.trim();
+  var ci = document.getElementById('inCi').value.trim();
+  var ju = document.getElementById('inJu').value.trim();
+  state.chars.push({zi:zi, ci:ci, tip:tip, ju:ju, zone:'new', addDate: todayStr()});
+  save();
+  document.getElementById('inZi').value=''; document.getElementById('inCi').value=''; document.getElementById('inTip').value=''; document.getElementById('inJu').value='';
+  renderWall(); toast('「'+zi+'」住进生字村啦 🌱');
+}
+function openChar(i) {
+  curChar = i;
+  var c = state.chars[i];
+  document.getElementById('cmTitle').textContent = c.zi;
+  var info = (c.ci?'组词：'+esc(c.ci):'还没有组词')
+    + '<br><span style="font-size:12px;color:#c76b00">💰 今日这个字赚了 ¥'+(c.dayEarn||0)+' · 累计 ¥'+(c.earned||0)+'</span>'
+    + (c.learnDate?'<br><span style="font-size:12px;color:#2ecc71">📅 '+esc(c.learnDate)+' 学会</span>':'')
+    + (c.tip?'<br><span style="font-size:13px;color:#4a5a6b">💡 记忆口诀（爸妈念）：'+esc(c.tip)+'</span>':'')
+    + (c.py?'<br><span style="font-size:11px;color:#98a6b5">拼音（爸妈参考）：'+esc(c.py)+'</span>':'')
+    + (c.ju?'<br><span style="font-size:13px;color:#4a5a6b">📖 例句（爸妈念）：'+esc(c.ju)+'</span>':'')
+    + '<br><span style="font-size:11px;color:#98a6b5">点下面的按钮听读音</span>';
+  document.getElementById('cmInfo').innerHTML = info;
+  document.getElementById('cmMove').textContent = c.zone==='new'
+    ? ('🏠 搬家到熟字城（会认了！'+(c.paidRec?'奖励已领过':'+¥1')+'）')
+    : '🌱 搬回生字村（再认识一次，不扣钱）';
+  var wb = document.getElementById('cmWrite');
+  if (c.zone==='old') { wb.style.display='block'; wb.textContent = c.wrote ? '✍ 会写已认证 ✓' : '✍ 我会写这个字了！认证 +¥2'; }
+  else { wb.style.display='none'; }
+  document.getElementById('charMask').classList.add('show');
+}
+function closeChar(){ document.getElementById('charMask').classList.remove('show'); }
+function speakCur() {
+  var c = state.chars[curChar];
+  try {
+    var u = new SpeechSynthesisUtterance(c.zi + '，' + (c.ci||c.zi) + '。' + (c.tip||'') + (c.ju?'。'+c.ju:''));
+    u.lang = 'zh-CN'; u.rate = 0.8;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch(e) { toast('这个浏览器不支持朗读，大人念给孩子听吧 😊'); }
+}
+function moveChar() {
+  var c = state.chars[curChar];
+  var toOld = c.zone==='new';
+  c.zone = toOld ? 'old' : 'new';
+  if (toOld) c.learnDate = todayStr();   /* 记录学会日期 */
+  else c.learnDate = null;               /* 搬回生字村则清除，重新学 */
+  var msg;
+  if (toOld) {   /* 识字规则①：会认（搬进熟字城）¥1/字，每个字只发一次 */
+    if (c.paidRec) {   /* 已经领过认字钱：搬来搬去不再重复发 */
+      sndOk();
+      msg = '🎉 「'+c.zi+'」又搬回熟字城！这个字的认字奖励已经领过啦，今天是复习巩固 💪';
+    } else {
+      var pay = Math.min(1, kidRemaining());
+      if (pay > 0) {
+        c.paidRec = true;   /* 标记：这个字以后不再发认字钱 */
+        c.earned = (c.earned||0) + pay;
+        logScore('wall', '认字:'+c.zi, pay);
+        sndCoin();
+        msg = '🎉 「'+c.zi+'」搬进熟字城，认字赚了 ¥'+pay+'！';
+      } else {
+        sndOk();
+        msg = '🎉 「'+c.zi+'」搬进熟字城！今日工资已满 ¥'+KID_CAP+'，明天再搬进来就能领 ¥1 💪';
+      }
+    }
+  } else {
+    sndOk();
+    msg = '没关系，「'+c.zi+'」多见几次面就认识了 💪';
+  }
+  c.dayEarn = wallTodayFor(c.zi);
+  save(); closeChar(); renderWall(); renderWage();
+  toast(msg);
+}
+function writeChar() {   /* 识字规则②：会写认证 ¥2/字（每个字限一次） */
+  if (curChar < 0) return;
+  var c = state.chars[curChar];
+  if (c.zone !== 'old') { toast('先把它搬进熟字城，再来认证会写哦'); return; }
+  if (c.wrote) { toast('这个字已经认证过啦 ✅'); return; }
+  var pay = Math.min(2, kidRemaining());
+  if (pay === 0) { sndOk(); toast('今日工资已满 ¥'+KID_CAP+'，明天再认证，「¥2 不会跑」💪'); return; }
+  logScore('wall', '会写:'+c.zi, pay);
+  c.wrote = true;
+  c.earnedFix2 = true;   /* 标记会写收入已记账，避免迁移重复补 */
+  c.earned = (c.earned||0) + pay;
+  c.dayEarn = wallTodayFor(c.zi);
+  save(); closeChar(); renderWall(); renderWage();
+  sndCoin();
+  toast('✍ 「'+c.zi+'」会写认证通过，赚了 ¥'+pay+'！');
+}
+function delChar() {
+  if (curChar<0) return;
+  state.chars.splice(curChar,1); save(); closeChar(); renderWall(); toast('已删除');
+}
+function esc(s){ return String(s).replace(/[<>&"]/g, function(m){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m];}); }
+
+/* ================= 口算（自动出题挑战） ================= */
+var mqDiff = 10, mq = null;
+function mqLimit() { return mqDiff===20 ? 300 : 180; }   /* 限时：10以内 3 分钟 · 20以内 5 分钟 */
+function setMqDiff(el, n) {
+  mqDiff = n;
+  var ch = document.getElementById('mqChips').children;
+  for (var i=0;i<ch.length;i++) ch[i].classList.remove('sel');
+  el.classList.add('sel');
+  if (!mq || mq.done) renderQuiz();
+}
+function mqGen() {
+  var qs = [];
+  for (var i=0;i<10;i++) {
+    var a, b, op, ans, plus = Math.random() < 0.5;
+    if (mqDiff === 10) {
+      if (plus) { a = 1+Math.floor(Math.random()*9); b = 1+Math.floor(Math.random()*(10-a)); ans = a+b; op='+'; }
+      else      { a = 2+Math.floor(Math.random()*9); b = 1+Math.floor(Math.random()*(a-1)); ans = a-b; op='−'; }
+    } else {
+      if (plus) { a = 5+Math.floor(Math.random()*11); b = 1+Math.floor(Math.random()*Math.min(9, 20-a)); ans = a+b; op='+'; }
+      else      { a = 10+Math.floor(Math.random()*10); b = 1+Math.floor(Math.random()*9); ans = a-b; op='−'; }
+    }
+    var opts = [ans], cand = [ans+1, ans-1, ans+2, ans-2];
+    for (var c=0; c<cand.length && opts.length<3; c++) {
+      if (cand[c] >= 0 && opts.indexOf(cand[c]) < 0) opts.push(cand[c]);
+    }
+    opts.sort(function(){ return Math.random()-0.5; });
+    qs.push({a:a, b:b, op:op, ans:ans, opts:opts});
+  }
+  return qs;
+}
+var mqTimer = null;
+function startQuiz() {
+  mq = {qs: mqGen(), idx:0, right:0, wrong:0, start:Date.now(), done:false, lock:false, pay:0};
+  if (mqTimer) clearInterval(mqTimer);
+  mqTimer = setInterval(function(){   /* 实时倒计时；超时自动交卷（只算练习不计钱） */
+    if (!mq || mq.done) return;
+    var left = mqLimit() - Math.round((Date.now()-mq.start)/1000);
+    var el = document.getElementById('mqTimer');
+    if (el) el.textContent = left >= 0 ? left+' 秒' : '已超时';
+    if (left < -1) { finishQuiz(); }
+  }, 1000);
+  renderQuiz();
+}
+function renderQuiz() {
+  var el = document.getElementById('mqArea');
+  if (!el) return;
+  if (!mq) {
+    el.innerHTML = '<div class="mq-q">🔢</div>'
+      + '<div class="mq-prog">规则：每次 10 题 · 限时：10 以内 3 分钟 · 20 以内 5 分钟<br>'
+      + '💰 <b>10 以内</b>：完成 +¥1 · 全对 +¥2　｜　💰 <b>20 以内（进阶）</b>：完成 +¥2 · 全对 +¥4<br>'
+      + '超时只算练习不计钱 ⏱️ · 每天场次不限（受当日工资封顶）</div>'
+      + '<button class="btn btn-green" onclick="startQuiz()">▶ 开始挑战（自动计时）</button>';
+    return;
+  }
+  if (mq.done) {
+    var secs = ((Date.now()-mq.start)/1000).toFixed(1);
+    var stars = mq.right===10 ? '⭐⭐⭐' : mq.right>=7 ? '⭐⭐' : '⭐';
+    el.innerHTML = '<div class="mq-q">'+(mq.right===10?'🏆':'📝')+'</div>'
+      + '<div class="mq-prog">用时 <b>'+secs+'</b> 秒 · 答对 <b>'+mq.right+'</b>/10 · '+stars+'</div>'
+      + (mq.right===10 ? '<div class="mq-prog">🎉 全对！'+(mq.pay>0 ? '这场赚了 ¥'+mq.pay+'（含满分奖金）' : '（超时或今日已满，这场只记成绩不计钱）')+'</div>' : '<div class="mq-prog">只跟昨天的自己比，明天再战 💪</div>')
+      + '<button class="btn btn-green" onclick="startQuiz()">🔁 再来一轮</button>';
+    return;
+  }
+  var q = mq.qs[mq.idx];
+  var left = Math.max(0, mqLimit() - Math.round((Date.now()-mq.start)/1000));
+  var html = '<div class="mq-prog">第 '+(mq.idx+1)+'/10 题 · ⏱ 剩余 <b id="mqTimer">'+left+' 秒</b> · 答对 '+mq.right+' · 错 '+mq.wrong+'</div>'
+    + '<div class="mq-q">'+q.a+' '+q.op+' '+q.b+' = ?</div><div class="mq-opts">';
+  for (var i=0;i<q.opts.length;i++) {
+    html += '<div class="mq-opt" onclick="answerQuiz('+q.opts[i]+', this)">'+q.opts[i]+'</div>';
+  }
+  el.innerHTML = html + '</div>';
+}
+function answerQuiz(v, elBtn) {
+  if (!mq || mq.done || mq.lock) return;   /* lock：380ms 动画期间不再接受第二次点击，防止跳题/记错账 */
+  if (elBtn && (elBtn.classList.contains('ok') || elBtn.classList.contains('no'))) return;
+  var q = mq.qs[mq.idx];
+  if (!q) { finishQuiz(); return; }        /* 防越界：最后一题答完后再点也不会崩 */
+  mq.lock = true;
+  if (v === q.ans) { mq.right++; sndOk(); if (elBtn) elBtn.classList.add('ok'); }
+  else { mq.wrong++; sndBad(); if (elBtn) elBtn.classList.add('no'); }
+  mq.idx++;
+  setTimeout(function(){
+    mq.lock = false;
+    if (mq.idx>=10) finishQuiz(); else renderQuiz();
+  }, 380);
+}
+function finishQuiz() {
+  if (!mq || mq.done) return;
+  mq.done = true; mq.lock = true;
+  if (mqTimer) { clearInterval(mqTimer); mqTimer = null; }
+  var secs = (Date.now()-mq.start)/1000;
+  var limit = mqLimit();
+  var over = secs > limit;   /* 超时只算练习不计钱 */
+  var basePay = mqDiff===20 ? 2 : 1;                        /* 完成奖：进阶版 ¥2 */
+  var fullBonus = mq.right===10 ? (mqDiff===20 ? 2 : 1) : 0;/* 全对奖：10以内+¥1 · 20以内+¥2 */
+  var pay = over ? 0 : Math.min(basePay + fullBonus, kidRemaining());
+  mq.pay = pay;
+  state.math.unshift({d:todayStr(), n:10, r:mq.right, w:mq.wrong, s:secs, pay:pay});
+  if (state.math.length > 30) state.math.length = 30;
+  if (pay > 0) logScore('math', mqDiff===20 ? '口算20进阶' : '口算10以内', pay);
+  addStar(1);
+  save(); renderMath(); renderQuiz(); renderWage();
+  if (over) { sndOk(); toast('⏱️ 用了 '+Math.round(secs)+' 秒（限时 '+limit+' 秒）——这次算练习不计钱，再来一次一定更快！'); }
+  else if (pay === 0) { sndOk(); toast('📝 答对 '+mq.right+'/10！今日工资已满，这场算免费加练 💪'); }
+  else if (mq.right===10) { sndCoin(); toast('🏆 全对！'+mqDiff+' 以内口算赚了 ¥'+pay+'，太厉害了！'); }
+  else toast('📝 答对 '+mq.right+'/10，赚了 ¥'+pay+'，明天再战 💪');
+}
+function renderMath() {
+  var t = todayStr();
+  var today = [], past = [];
+  for (var i=0;i<state.math.length;i++) { if (state.math[i].d===t) today.push(state.math[i]); else past.push(state.math[i]); }
+  /* 今日汇总 */
+  var tp = 0, tfull = 0, tbest = null;
+  for (var j=0;j<today.length;j++) {
+    tp += (today[j].pay||0);
+    if (today[j].w===0) tfull++;
+    if (today[j].w===0 && (tbest===null || today[j].s < tbest)) tbest = today[j].s;
+  }
+  document.getElementById('mqToday').innerHTML =
+    '<div class="mq-prog">'+(today.length
+      ? '今日 '+today.length+' 场 · 赚 ¥'+tp+' · 全对 '+tfull+' 场'+(tbest!==null?' · 今日最快 '+tbest.toFixed(1)+' 秒':'')
+      : '今天还没练，开始第一场吧 🔢')+'</div>'
+    + '<div class="mq-prog">⏱️ 限时：10 以内 3 分钟（¥1~2）· 20 以内 5 分钟（¥2~4）· 超时只算练习不计钱</div>';
+  /* 全对最好成绩（不限今天） */
+  var best = null;
+  for (var k2=0;k2<state.math.length;k2++) {
+    if (state.math[k2].w===0 && (best===null || state.math[k2].s < best.s)) best = state.math[k2];
+  }
+  document.getElementById('tmBest').innerHTML = best
+    ? '🏆 全对最好成绩：'+best.s.toFixed(1)+' 秒（'+best.d+'，'+best.n+' 题）—— 打破它！'
+    : '🏆 全对最好成绩：还没有，等你来创造！';
+  /* 历史列表：今天排最前，其余按时间倒序，最多 30 场 */
+  var html = '';
+  var list = today.concat(past);
+  for (var k=0;k<list.length;k++) {
+    var r = list[k];
+    var dLabel = (r.d===t) ? '今天' : r.d.slice(5);
+    html += '<div class="rec"><span class="d">📅 '+dLabel+'</span>'
+      + '<span>✅ '+r.r+'/'+r.n+' &nbsp;❌ '+r.w+'</span>'
+      + '<span class="s">⏱️ '+r.s.toFixed(1)+'s</span>'
+      + '<span>'+(r.pay?'💰¥'+r.pay:'—')+'</span></div>';
+  }
+  document.getElementById('tmList').innerHTML = html || '<div class="empty-tip">还没有记录，今晚来第一战吧 🔢</div>';
+}
+
+/* ================= 周目标 ================= */
+function renderWeek() {
+  var w = state.week;
+  updateScoreCard();
+  var gEl = document.getElementById('swGoal');
+  if (gEl && gEl !== document.activeElement) gEl.value = state.extra.swGoal||1000;
+  var pEl = document.getElementById('ppGoal');
+  if (pEl && pEl !== document.activeElement) pEl.value = state.extra.promise||1300;
+  var hc = '';
+  for (var i=0;i<5;i++) {
+    hc += '<input maxlength="1" value="'+esc(w.chars[i]||'')+'" oninput="setWChar('+i+',this.value)">';
+  }
+  document.getElementById('wChars').innerHTML = hc;
+
+  var ht = '';
+  for (var j=0;j<3;j++) {
+    var todo = w.todos[j];
+    ht += '<div class="w-todo"><div class="box'+(todo.done?' on':'')+'" onclick="toggleTodo('+j+')">'+(todo.done?'✓':'')+'</div>'
+      + '<input placeholder="想做到的事，比如：当一次小老师" value="'+esc(todo.text||'')+'" oninput="setTodo('+j+',this.value)"></div>';
+  }
+  document.getElementById('wTodos').innerHTML = ht;
+
+  var order = ['mon','tue','wed','thu','fri','sat','sun'];
+  var hs = '';
+  for (var m=0;m<order.length;m++) {
+    var key = order[m], n = w.stars[key]||0;
+    hs += '<div class="w-star" onclick="tapDayStar(\''+key+'\')"><div class="dn">'+DAY_NAMES[key]+'</div>'
+      + '<div class="dot'+(n>0?' on':'')+'">'+(n>0?'×'+n:'☆')+'</div></div>';
+  }
+  document.getElementById('wStars').innerHTML = hs;
+
+  var total = 0;
+  for (var q=0;q<order.length;q++) total += (w.stars[order[q]]||0);
+  document.getElementById('wStarTotal').innerHTML = '本周共 <b>'+total+'</b> 颗星 ⭐ '+dealHint(total);
+  document.getElementById('wDeal').value = w.deal||'';
+}
+function dealHint(n) {
+  if (n>=15) return '—— 太厉害了，小约定必须兑现！🎉';
+  if (n>=10) return '—— 很棒了，周日就兑现小约定吧 🎁';
+  if (n>=5)  return '—— 继续加油，冲 10 颗！💪';
+  return '—— 一颗一颗攒，都是自己的努力';
+}
+function setWChar(i,v){ state.week.chars[i]=v; save(); }
+function setTodo(i,v){ state.week.todos[i].text=v; save(); }
+function toggleTodo(i){ state.week.todos[i].done=!state.week.todos[i].done; save(); renderWeek(); }
+function tapDayStar(k){
+  state.week.stars[k] = ((state.week.stars[k]||0)+1) % 4;
+  save(); renderWeek();
+}
+function saveDeal(v){ state.week.deal=v; save(); }
+function newWeek() {
+  if (!confirm('开启新的一周？本周的星星和收入统计会清零（存钱罐、字卡和口算记录都保留）。\n记得先把本周赚到的钱真的放进存钱罐哦 🐷')) return;
+  var d = blankWeek(); d.deal = '';
+  state.week = d; save(); renderWeek();
+  toast('新的一周，继续为 Switch 冲鸭 🎮');
+}
+
+/* ================= 本周收入 + 存钱进度（自动统计） ================= */
+function weekPoints() {
+  var start = mondayStr();
+  var sum = {task:0, parent:0, train:0, math:0};
+  for (var i=0;i<state.scores.length;i++) {
+    var s = state.scores[i];
+    if (!s || s.d < start) continue;   /* 日期字符串可直接比较 */
+    sum[s.cat] = (sum[s.cat]||0) + s.pts;
+  }
+  return sum;
+}
+function weekTotal() {   /* 本周全部收入（含识字/礼物/英语/家长），所有展示统一走这里 */
+  var s = weekPoints(), t = 0;
+  for (var k in s) { if (s[k]) t += s[k]; }
+  return t;
+}
+function weekKidTotal() {   /* 本周孩子自己赚的部分（不含家长打卡） */
+  var s = weekPoints();
+  return (s.task||0)+(s.train||0)+(s.math||0)+(s.wall||0)+(s.gift||0)+(s.eng||0);
+}
+function updateScoreCard() {
+  var sum = weekPoints();
+  var total = weekTotal();
+  var sl = document.getElementById('wkScore');
+  if (sl) sl.innerHTML = '本周全家已赚：<b>¥'+total+'</b>';
+  var sd = document.getElementById('wkDetail');
+  if (sd) sd.innerHTML = '✏️ 任务 ¥'+(sum.task||0)+' · 🚂 小火车 ¥'+(sum.train||0)+' · 🔢 口算 ¥'+(sum.math||0)+' · 🏰 识字 ¥'+(sum.wall||0)+' · 🗣️ 英语 ¥'+(sum.eng||0)+' · 🎁 礼物 ¥'+(sum.gift||0)+' · 👨‍💻 家长 ¥'+(sum.parent||0);
+  var pk = document.getElementById('wkPK');
+  if (pk) {
+    var kid = weekKidTotal();
+    var par = sum.parent||0;
+    var msg;
+    if (par === 0 && kid === 0) msg = '⚔️ 本周 PK：都还没赚，谁先打卡谁领先！';
+    else if (par === 0) msg = '⚔️ 本周 PK：小朋友 ¥'+kid+' vs 家长 ¥0 —— 小朋友遥遥领先，家长快去打卡追分！';
+    else if (kid > par) msg = '⚔️ 本周 PK：小朋友 ¥'+kid+' vs 家长 ¥'+par+' —— 小朋友领先 ¥'+(kid-par)+'！';
+    else if (kid < par) msg = '⚔️ 本周 PK：小朋友 ¥'+kid+' vs 家长 ¥'+par+' —— 家长领先，加油追呀！';
+    else msg = '⚔️ 本周 PK：¥'+kid+' vs ¥'+par+' —— 平分秋色！';
+    pk.textContent = msg;
+  }
+  updateSwitchCard();
+}
+/* Switch 存钱进度 + 家长补齐承诺 + 过年前能不能赶上的估算 */
+function updateSwitchCard() {
+  var saved = state.extra.total;
+  var goal = state.extra.swGoal||1000;          /* 我的目标 */
+  var promise = state.extra.promise||0;         /* 爸爸补齐 */
+  var pct = Math.min(100, Math.round(saved/goal*100));
+  var fill = document.getElementById('swFill');
+  if (fill) fill.style.width = pct+'%';
+  var line = document.getElementById('swLine');
+  if (line) line.innerHTML = '🐷 我已存到 <b>¥'+saved+'</b> / ¥'+goal+'（'+pct+'%）'
+    + (saved>=goal ? ' —— 🎉 我的目标达成！爸爸兑现 ¥'+promise+'，Switch 安排！'
+      + (saved-goal>0 ? ' 多赚的 ¥'+(saved-goal)+' 进【卡带基金】🃏' : '') : '');
+  var pl = document.getElementById('swPromise');
+  if (pl) pl.innerHTML = '👨 家长补齐承诺：我已存 ¥'+saved+' + 爸爸补 ¥'+promise+' = 合计 ¥'+(saved+promise)+' 🎮'
+    + '<br><span style="font-size:12px">（目标合计 ¥'+(goal+promise)+' ＝ 我存满 ¥'+goal+' ＋ 爸爸补 ¥'+promise+'）</span>';
+  var eta = document.getElementById('swEta');
+  if (eta) {
+    var days = Math.ceil((new Date(CNY_DATE) - new Date(todayStr())) / 86400000);
+    if (days <= 0) {
+      eta.innerHTML = '过年啦！快去兑现承诺 🧧';
+    } else {
+      var weeks = Math.ceil(days/7);
+      var pace = weekTotal();                     /* 与本周收入卡片同一口径 */
+      var proj = saved + Math.round(pace/7*days); /* saved 已含本周收入，不能再按整周重复累加 */
+      eta.innerHTML = '距过年还有 '+days+' 天（约 '+weeks+' 周）· 本周已赚 ¥'+pace
+        + ' · 照这速度到过年约有 ¥'+proj + (proj>=goal ? ' ✅ 能赶上！' : ' ⚠️ 按目前速度还差 ¥'+(goal-proj)+'，要加把劲！');
+    }
+  }
+  drawSwChart();
+}
+function setSwGoal(v) {
+  var n = parseInt(v, 10);
+  state.extra.swGoal = (isNaN(n)||n<100) ? 100 : n;
+  save(); updateSwitchCard();
+}
+function setPromise(v) {
+  var n = parseInt(v, 10);
+  state.extra.promise = (isNaN(n)||n<0) ? 0 : n;
+  save(); updateSwitchCard();
+}
+
+/* ================= 存钱曲线图 ================= */
+function drawSwChart() {
+  var cv = document.getElementById('swChart');
+  if (!cv) return;
+  var w = cv.clientWidth;
+  if (!w) return;   /* 页签未显示时不画 */
+  var H = 150, dpr = window.devicePixelRatio || 1;
+  cv.width = w*dpr; cv.height = H*dpr; cv.style.height = H+'px';
+  var ctx = cv.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, H);
+
+  /* 按天聚合收入 */
+  var byDay = {};
+  for (var i=0;i<state.scores.length;i++) {
+    var s = state.scores[i];
+    byDay[s.d] = (byDay[s.d]||0) + s.pts;
+  }
+  var days = Object.keys(byDay).sort();
+  if (!days.length) {
+    ctx.fillStyle = '#b8c4d2'; ctx.font = '13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('赚到第一笔钱，曲线就诞生啦 🌱', w/2, H/2);
+    return;
+  }
+
+  /* 从首笔收入日到今天，生成逐日累计序列（缺的日子记 0） */
+  var start = new Date(days[0]+'T00:00:00'), end = new Date();
+  var series = [], d = new Date(start), cum = 0, guard = 0;
+  while (d <= end && guard < 400) {
+    var key = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+    cum += (byDay[key]||0);
+    series.push(cum);
+    guard++;
+    d.setDate(d.getDate()+1);
+  }
+
+  var goal = state.extra.swGoal||1000;
+  var maxY = Math.max(series[series.length-1], goal) * 1.1;
+  var px = function(i){ return 8 + (w-34) * (series.length===1 ? 0 : i/(series.length-1)); };
+  var py = function(v){ return H - 10 - (H-26) * (v/maxY); };
+
+  /* 横向网格线 */
+  ctx.strokeStyle = '#eef2f7'; ctx.lineWidth = 1;
+  for (var g=1; g<=3; g++) {
+    var gy = py(maxY*g/3.3);
+    ctx.beginPath(); ctx.moveTo(6, gy); ctx.lineTo(w-6, gy); ctx.stroke();
+  }
+
+  /* 目标线（粉色虚线） */
+  var goalY = py(goal);
+  ctx.strokeStyle = '#e84393'; ctx.setLineDash([5,4]); ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(6, goalY); ctx.lineTo(w-6, goalY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#e84393'; ctx.font = '11px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('🎮 ¥'+goal, w-8, goalY-4);
+
+  /* 曲线 + 填充 */
+  var n = series.length;
+  ctx.beginPath();
+  for (var j=0;j<n;j++) { var x=px(j), y=py(series[j]); if (j) ctx.lineTo(x,y); else ctx.moveTo(x,y); }
+  ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2.5; ctx.stroke();
+  ctx.lineTo(px(n-1), H-10); ctx.lineTo(px(0), H-10); ctx.closePath();
+  ctx.fillStyle = 'rgba(46,204,113,.12)'; ctx.fill();
+
+  /* 最新点 + 金额标签 */
+  ctx.beginPath(); ctx.arc(px(n-1), py(series[n-1]), 4.5, 0, 7);
+  ctx.fillStyle = '#27ae60'; ctx.fill();
+  ctx.fillStyle = '#1e8449'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'right';
+  ctx.fillText('已存 ¥'+series[n-1], px(n-1)-4, py(series[n-1])-9);
+}
+
+/* ================= 发薪日仪式 ================= */
+function openPay() {
+  var sum = weekPoints();
+  var total = weekTotal();   /* 发薪单金额 = 本周账本合计（含识字/英语/礼物），保证明细能加到总额 */
+  var stars = 0, order = ['mon','tue','wed','thu','fri','sat','sun'];
+  for (var q=0;q<order.length;q++) stars += (state.week.stars[order[q]]||0);
+  var goal = state.extra.swGoal||1000;
+  var pct = Math.min(100, Math.round(state.extra.total/goal*100));
+  document.getElementById('payBody').innerHTML =
+    '<div class="score-line">本周全家工资：<b>¥'+total+'</b></div>'
+    + '<div class="score-detail">✏️ 任务 ¥'+(sum.task||0)+' · 🚂 小火车 ¥'+(sum.train||0)+' · 🔢 口算 ¥'+(sum.math||0)+' · 🏰 识字 ¥'+(sum.wall||0)+' · 🗣️ 英语 ¥'+(sum.eng||0)+' · 🎁 礼物 ¥'+(sum.gift||0)+' · 👨‍💻 家长 ¥'+(sum.parent||0)+'</div>'
+    + '<div class="sub" style="text-align:center;margin:-2px 0 6px">👆 上面各项相加 = 本周全家工资 ¥'+total+'</div>'
+    + '<div class="pk-line" style="background:#fff3dd; color:#c76b00;">⭐ 本周星星 '+stars+' 颗 · 存钱罐累计 ¥'+state.extra.total+'（'+pct+'%）</div>'
+    + '<p style="font-size:13px; line-height:1.9; color:#4a5a6b; margin-top:12px;">'
+    + (total>0
+        ? '现在，请把 ¥'+total+' 变成真硬币/纸币，让孩子<b>亲手</b>放进存钱罐 🐷<br>听到「哗啦」一声，这一周才算真的攒下来了！'
+        : '本周还没赚到钱。别急，明天从第一个任务开始 💪')
+    + '</p>';
+  document.getElementById('payMask').classList.add('show');
+}
+function payDone() {
+  closePay(); sndCoin();
+  toast('💰 发薪成功！离 Switch 又近一步 🎮');
+}
+function closePay(){ document.getElementById('payMask').classList.remove('show'); }
+
+/* ================= 家长弹窗 & 备份 ================= */
+function openParent(){ document.getElementById('parentMask').classList.add('show'); }
+function closeParent(){ document.getElementById('parentMask').classList.remove('show'); }
+function exportData(){ document.getElementById('bakArea').value = JSON.stringify(state); toast('已导出到文本框，全选复制保存即可'); }
+function applyRestore(s) {   /* 统一的恢复入口：桌面文本框备份 / iPad 文件备份都用它 */
+  if (!s || !s.routine) throw 0;
+  if (!s.chars) s.chars = [];
+  if (!s.math) s.math = [];
+  state = s;
+  rollover(); save();   /* 补齐新增字段 + 换天清理，避免导入旧备份后状态错乱 */
+  renderRoutine(); renderTask(); renderWall(); renderMath(); renderQuiz(); renderEngPage(); renderWeek(); renderEgg();
+  closeParent();
+  toast('✅ 数据已恢复，存钱罐 ¥'+(state.extra.total||0)+' 回来啦');
+}
+function importData() {
+  try {
+    applyRestore(JSON.parse(document.getElementById('bakArea').value));
+  } catch(e) { toast('粘贴的内容不对，检查一下'); }
+}
+/* iPad / 手机：把备份存成文件（Safari 会存到「文件」App），再到新网址用下面按钮恢复 */
+function exportFile() {
+  try {
+    var blob = new Blob([JSON.stringify(state)], { type:'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '存钱大作战备份-'+todayStr()+'.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 800);
+    toast('⬇️ 已下载备份文件，在「文件」App 里可以找到');
+  } catch(e) {
+    exportData();   /* 老浏览器兜底：退回文本框方式 */
+  }
+}
+function pickBackup() {
+  var f = document.getElementById('bakFile');
+  if (!f) { exportData(); return; }
+  f.value = '';
+  f.click();
+}
+function importFile(input) {
+  var f = input.files && input.files[0];
+  if (!f) return;
+  var r = new FileReader();
+  r.onload = function() {
+    try { applyRestore(JSON.parse(String(r.result))); }
+    catch(e) { toast('这个文件不是有效的备份 😅'); }
+  };
+  r.onerror = function(){ toast('文件读不出来，再试一次'); };
+  r.readAsText(f);
+}
+
+/* ================= iPad / iOS 适配 ================= */
+/* iOS 要求音频必须由用户手势"解锁"，否则所有音效静音 */
+function iosUnlockAudio() {
+  var a = ac();
+  if (a && a.state !== 'running') { try { a.resume(); } catch(e) {} }
+}
+document.addEventListener('touchstart', iosUnlockAudio, { passive:true });
+document.addEventListener('click', iosUnlockAudio);
+/* 转屏/改窗口宽度后重画曲线（canvas 不会自动跟着变） */
+function redrawChartOnResize() {
+  var active = document.querySelector('.tab.active');
+  if (active && active.id === 'tab-week') { updateScoreCard(); }
+}
+window.addEventListener('orientationchange', function(){ setTimeout(redrawChartOnResize, 350); });
+window.addEventListener('resize', redrawChartOnResize);
+/* 弹出键盘时把输入框滚到可见区域，别被底部导航挡住 */
+document.addEventListener('focusin', function(e) {
+  var t = e.target;
+  if (!t || !t.tagName || (t.tagName !== 'INPUT' && t.tagName !== 'TEXTAREA')) return;
+  setTimeout(function() {
+    try { t.scrollIntoView({ block:'center', behavior:'smooth' }); }
+    catch(err) { try { t.scrollIntoView(); } catch(e2) {} }
+  }, 320);
+});
+
+/* ================= 启动 ================= */
+(function(){
+  var d = new Date();
+  var week = ['日','一','二','三','四','五','六'];
+  document.getElementById('hDate').textContent =
+    d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 · 星期'+week[d.getDay()];
+  renderRoutine(); renderTask(); renderWall(); renderMath(); renderQuiz(); renderEngPage(); renderWeek();
+  renderEgg();
+})();
+</script>
+</body>
+</html>
