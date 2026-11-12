@@ -2434,6 +2434,13 @@ document.addEventListener('focusin', function(e) {
   }, 320);
 });
 
+/* 离线可用：把页面缓存到本机（pages 用 https 才会生效；局域网 http 下自动跳过） */
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+
 /* ================= 启动 ================= */
 (function(){
   var d = new Date();
