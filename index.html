@@ -134,6 +134,27 @@
   .shelf-item.open { border-color:#3fb27f; background:#f1faf5; }
   .shelf-cur { font-size:12.5px; color:#8a6d1f; background:#fff6df; border-radius:10px; padding:9px 12px; margin-top:10px; }
   .shelf-cats { margin-bottom:10px; }
+  /* ---- 存钱闯关地图 / 星星商店 / 心愿券 ---- */
+  .ms-item { display:flex; align-items:center; gap:10px; background:#fbfdff; border:2px solid #e3eaf3; border-radius:12px; padding:10px 12px; margin-bottom:8px; }
+  .ms-item.got { border-color:#3fb27f; background:#f1faf5; }
+  .ms-item.ok  { border-color:#cfe0f5; background:#f6f9fd; }
+  .ms-item.lock { opacity:.72; }
+  .ms-ic { font-size:24px; flex:none; }
+  .ms-b { flex:1; min-width:0; display:flex; flex-direction:column; }
+  .ms-t { font-size:14px; font-weight:bold; color:#31445c; }
+  .ms-r { font-size:12px; color:#7b8b9d; margin-top:2px; }
+  .ms-st { font-size:12px; color:#8fa0b8; flex:none; }
+  .ms-item.got .ms-st { color:#2e9e6a; font-weight:bold; }
+  .ms-go { border:none; border-radius:999px; padding:8px 12px; font-size:12.5px; font-weight:bold; color:#fff; background:linear-gradient(135deg,#3fb27f,#2e9e6a); min-height:38px; flex:none; }
+  .ms-go:active { transform:scale(.96); }
+  .shop-item { display:flex; align-items:center; gap:9px; background:#fffbef; border:2px solid #f0e0b0; border-radius:12px; padding:9px 12px; margin-bottom:8px; }
+  .shop-item .sp-e { font-size:21px; flex:none; }
+  .shop-item .sp-b { flex:1; min-width:0; font-size:13.5px; color:#5d4a1f; font-weight:bold; }
+  .shop-item .sp-c { font-size:12.5px; color:#a5771a; font-weight:bold; flex:none; }
+  .shop-go { border:none; border-radius:999px; padding:7px 12px; font-size:12px; font-weight:bold; color:#fff; background:linear-gradient(135deg,#f5b041,#e08e0b); min-height:34px; flex:none; }
+  .shop-go.off { background:#e3eaf3; color:#90a0b3; }
+  .pend { font-size:12.5px; color:#a06a00; background:#fff5e8; border-radius:10px; padding:8px 11px; margin-top:8px; }
+  .w-todo-prog { font-size:12.5px; color:#5a6b7d; margin-top:8px; }
   .plist { display:flex; flex-direction:column; gap:8px; }
   .pitem { display:flex; align-items:center; gap:8px; border:2px solid #d7e0ec; border-radius:12px; padding:10px 12px; cursor:pointer; background:#fbfdff; }
   .pitem.on { border-color:#5b8def; background:#eef4fd; }
@@ -529,16 +550,14 @@
       <h2>🐷 Switch 存钱罐（目标：过年前拿下！）</h2>
       <div class="progress-wrap"><div class="progress-fill" id="swFill"></div></div>
       <div class="score-line" id="swLine"></div>
-      <div class="pk-line" id="swPromise" style="background:#fff5e8; color:#a06a00;"></div>
       <div class="score-detail" id="swEta"></div>
       <canvas id="swChart" style="width:100%; height:150px; margin-top:6px;"></canvas>
       <div style="display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;">
         <span style="font-size:13px; color:#5a6b7d; white-space:nowrap;">我的存钱目标</span>
         <input type="number" class="goal-in" id="swGoal" value="1000" inputmode="numeric" enterkeyhint="done" onchange="setSwGoal(this.value)">
-        <span style="font-size:13px; color:#5a6b7d; white-space:nowrap;">👨 爸爸补齐</span>
-        <input type="number" class="goal-in" id="ppGoal" value="1300" inputmode="numeric" enterkeyhint="done" onchange="setPromise(this.value)">
-        <span style="font-size:12px; color:#8a97a6;">元（两数相加 = Switch 价格，如 OLED ¥2300）</span>
+        <span style="font-size:12px; color:#8a97a6;">元 —— 自己赚够它</span>
       </div>
+      <div class="sub" style="margin-top:8px">💪 罐子里每一分都是自己赚的，<b>没有大人补齐</b>——赚多少存多少，这才叫真本事。</div>
       <button class="btn btn-blue" onclick="openPay()">🧾 周日发薪日 · 领取本周工资单</button>
     </div>
     <div class="card">
@@ -555,17 +574,26 @@
     </div>
     <div class="card">
       <h2>✅ 这周我想做到的事</h2>
+      <div class="sub">周日晚上定 1~3 件（孩子说，大人帮着记）。<b>全部做到 = 1 张心愿券</b>；做到 2 件 = +3 颗星；只做 0~1 件：不扣钱，但周日要一起复盘「卡在哪」。</div>
       <div id="wTodos"></div>
+      <div class="w-todo-prog" id="wTodoProg"></div>
+      <div class="sub" style="margin-top:10px">🎫 心愿券能换（选一个，写进券里）：</div>
+      <div class="chips" id="wRewardChips" style="justify-content:flex-start"></div>
+      <button class="btn btn-green" id="wClaimBtn" onclick="claimWeeklyWish()">🎫 全部做到，领心愿券</button>
     </div>
     <div class="card">
-      <h2>⭐ 每天的星星</h2>
-      <div class="sub">点一下 +1 颗（最多 3 颗）。小火车开完全程、完成任务会自动加星 ✨</div>
+      <h2>⭐ 星星存折（星星能换东西了）</h2>
+      <div class="sub">每天点一下 +1 颗（最多 3 颗）；小火车开完全程、完成任务、口算全对会自动加星 ✨</div>
       <div class="w-stars" id="wStars"></div>
       <div class="stat-bar" style="margin-top:12px" id="wStarTotal"></div>
+      <div class="sub" style="margin-top:12px">🏪 <b>星星商店</b>——攒够就能换，换完会扣星星（每周重算）</div>
+      <div id="starShop"></div>
+      <div id="starPending"></div>
     </div>
     <div class="card">
-      <h2>🎁 里程碑奖励（存钱进度到一半时兑现）</h2>
-      <input class="deal" id="wDeal" placeholder="比如：一本贴纸书 / 公园野餐一次 / 多讲三个睡前故事" oninput="saveDeal(this.value)">
+      <h2>🗺️ 存钱闯关地图（每一关都有真奖励）</h2>
+      <div class="sub">存到金额 → 关卡自动亮起 → 点「找爸妈兑现」盖章领取。奖励现在就写清楚，省得到点了再讨价还价 😄</div>
+      <div id="msList"></div>
     </div>
     <button class="btn btn-gray" onclick="newWeek()">🔄 开启新的一周（周日晚使用）</button>
   </section>
@@ -903,7 +931,7 @@ function defState() {
     egg: null,                              /* 每日彩蛋 {date, tab, found} */
     parent: {date: todayStr(), items: {}},  /* items: {ai, sport, sleep} */
     scores: [],                             /* 得分流水：{d, cat, label, pts} */
-    extra: {total:0, swGoal:1000, promise:1300, streak:{count:0,last:''}, stickers:{}},  /* 已存金额/我的目标/爸爸补齐/连续天数/贴纸 */
+    extra: {total:0, swGoal:1000, streak:{count:0,last:''}, stickers:{}},  /* 已存金额/我的目标/连续天数/贴纸 */
     chars: [],
     math: [],
     week: blankWeek()
@@ -913,7 +941,8 @@ function blankWeek() {
   return {
     weekStart: mondayStr(), chars:['','','','',''],
     todos: [{text:'',done:false},{text:'',done:false},{text:'',done:false}],
-    stars: {mon:0,tue:0,wed:0,thu:0,fri:0,sat:0,sun:0}, deal:''
+    stars: {mon:0,tue:0,wed:0,thu:0,fri:0,sat:0,sun:0},
+    deal:'', reward:'', wishClaimed:false, wishPart:false
   };
 }
 function load() {
@@ -960,10 +989,9 @@ function rollover() {
   }
   if (!state.parent || state.parent.date !== t) { state.parent = {date:t, items:{}}; }
   if (!state.scores) { state.scores = []; }
-  if (!state.extra) { state.extra = {total:0, swGoal:1000, promise:1300, streak:{count:0,last:''}, stickers:{}}; }
+  if (!state.extra) { state.extra = {total:0, swGoal:1000, streak:{count:0,last:''}, stickers:{}}; }
   else {
     if (state.extra.swGoal == null) { state.extra.swGoal = 1000; }   /* 兼容旧数据 */
-    if (state.extra.promise == null) { state.extra.promise = Math.max(0, 2300 - (state.extra.swGoal||1000)); }
   }
   if (state.mood && state.mood.date !== t) { state.mood = null; }   /* 心情每日清零 */
   if (!state.achievements) { state.achievements = {}; }
@@ -2516,8 +2544,6 @@ function renderWeek() {
   updateScoreCard();
   var gEl = document.getElementById('swGoal');
   if (gEl && gEl !== document.activeElement) gEl.value = state.extra.swGoal||1000;
-  var pEl = document.getElementById('ppGoal');
-  if (pEl && pEl !== document.activeElement) pEl.value = state.extra.promise||1300;
   var hc = '';
   for (var i=0;i<5;i++) {
     hc += '<input maxlength="1" value="'+esc(w.chars[i]||'')+'" oninput="setWChar('+i+',this.value)">';
@@ -2531,6 +2557,25 @@ function renderWeek() {
       + '<input placeholder="想做到的事，比如：当一次小老师" value="'+esc(todo.text||'')+'" oninput="setTodo('+j+',this.value)"></div>';
   }
   document.getElementById('wTodos').innerHTML = ht;
+  /* 完成进度 + 心愿券状态 */
+  var filled = 0, doneN = 0;
+  for (var fj=0; fj<3; fj++) { if ((w.todos[fj].text||'').trim()) { filled++; if (w.todos[fj].done) doneN++; } }
+  var prog = document.getElementById('wTodoProg');
+  if (prog) prog.innerHTML = '本周填了 <b>'+filled+'</b> 件，做到 <b>'+doneN+'</b> 件'
+    + (filled===0 ? ' —— 先去定 1~3 件吧 ✍️' : (w.wishClaimed ? ' —— 🎫 心愿券已领，记得让爸妈兑现！' : (doneN>=filled ? ' —— 全做到啦！快点下面的按钮领心愿券 🎉' : (doneN>=2 ? ' —— 差一点就全做到，再冲一件！' : ' —— 慢慢来，每天一件也好'))));
+  var chips = '';
+  for (var wi=0; wi<WISH_LIST.length; wi++) {
+    var it = WISH_LIST[wi];
+    chips += '<span class="chip'+(w.reward===it.id ? ' sel' : '')+'" onclick="chooseWish(\''+it.id+'\')">'+it.e+' '+it.t+'</span>';
+  }
+  var chipBox = document.getElementById('wRewardChips');
+  if (chipBox) chipBox.innerHTML = chips;
+  var cb = document.getElementById('wClaimBtn');
+  if (cb) {
+    if (w.wishClaimed) { cb.textContent = '🎫 本周心愿券已领 · '+(wishName(w.reward)||'待选'); cb.className = 'btn btn-gray'; }
+    else if (filled>0 && doneN>=filled) { cb.textContent = '🎫 全部做到，领心愿券（'+(wishName(w.reward)||'先选奖励')+'）'; cb.className = 'btn btn-green'; }
+    else { cb.textContent = '🔒 全部做到才能领（'+doneN+'/'+Math.max(filled,1)+'）'; cb.className = 'btn btn-gray'; }
+  }
 
   var order = ['mon','tue','wed','thu','fri','sat','sun'];
   var hs = '';
@@ -2541,10 +2586,158 @@ function renderWeek() {
   }
   document.getElementById('wStars').innerHTML = hs;
 
-  var total = 0;
-  for (var q=0;q<order.length;q++) total += (w.stars[order[q]]||0);
-  document.getElementById('wStarTotal').innerHTML = '本周共 <b>'+total+'</b> 颗星 ⭐ '+dealHint(total);
-  document.getElementById('wDeal').value = w.deal||'';
+  document.getElementById('wStarTotal').innerHTML = '本周共 <b>'+weekStars()+'</b> 颗星 ⭐ '+dealHint(weekStars());
+  renderShop();
+  renderPending();
+  renderMilestones();
+}
+/* ===== 这周我想做到的事：心愿券 ===== */
+var WISH_LIST = [
+  {id:'movie', e:'🎬', t:'家庭电影夜（自己选片）'},
+  {id:'park',  e:'🏞️', t:'公园野餐一次'},
+  {id:'story', e:'📖', t:'睡前多讲 3 个故事'},
+  {id:'bake',  e:'🧁', t:'和爸妈一起做点心'}
+];
+function wishName(id) {
+  for (var i=0;i<WISH_LIST.length;i++) if (WISH_LIST[i].id===id) return WISH_LIST[i].e+' '+WISH_LIST[i].t;
+  return '';
+}
+function chooseWish(id) {
+  var w = state.week;
+  if (w.wishClaimed) { toast('本周心愿券已经领啦，换奖励要等下周 😄'); return; }
+  w.reward = id; save(); renderWeek();
+  toast('🎫 心愿券写好了：'+wishName(id));
+}
+function claimWeeklyWish() {
+  var w = state.week, filled = 0, doneN = 0;
+  for (var i=0;i<3;i++) { if ((w.todos[i].text||'').trim()) { filled++; if (w.todos[i].done) doneN++; } }
+  if (w.wishClaimed) { toast('本周心愿券已经领过啦 ✅ 记得找爸妈兑现'); return; }
+  if (filled === 0) { toast('先在上面定 1~3 件这周想做到的事 ✍️'); return; }
+  if (doneN < filled) {
+    if (doneN >= 2 && !w.wishPart) {
+      w.wishPart = true;
+      for (var k=0;k<3;k++) addStar(1);   /* 差一件：给 3 颗星安慰奖（不重复给） */
+      save(); renderWeek();
+      toast('💪 做到 '+doneN+' 件，已经很棒！先送 3 颗星，全部做完再领心愿券');
+      return;
+    }
+    toast('还差 '+(filled-doneN)+' 件没做到，全部做完才能领心愿券哦');
+    return;
+  }
+  if (!w.reward) { toast('先选一个心愿券奖励 🎫'); return; }
+  w.wishClaimed = true;
+  if (!state.extra.tickets) state.extra.tickets = 0;
+  state.extra.tickets++;
+  if (!state.extra.ticketLog) state.extra.ticketLog = [];
+  state.extra.ticketLog.push({d: todayStr(), t: wishName(w.reward), claimed: false});
+  save(); renderWeek();
+  sndLevel();
+  showCele('🎫', '心愿券到手！', wishName(w.reward)+' —— 拿给爸妈兑现');
+}
+/* ===== 星星商店（星星能换东西） ===== */
+var STAR_SHOP = [
+  {cost:5,  e:'📺', t:'多 15 分钟 Switch 时间'},
+  {cost:8,  e:'🍦', t:'一次零食 / 甜品自选'},
+  {cost:12, e:'🎡', t:'周末出去玩半天（自己定去哪）'}
+];
+function weekStars() {
+  var w = state.week, n = 0;
+  for (var k in w.stars) n += (w.stars[k]||0);
+  return n;
+}
+function renderShop() {
+  var el = document.getElementById('starShop');
+  if (!el) return;
+  var have = weekStars(), html = '';
+  for (var i=0;i<STAR_SHOP.length;i++) {
+    var it = STAR_SHOP[i], ok = have >= it.cost;
+    html += '<div class="shop-item"><span class="sp-e">'+it.e+'</span>'
+      + '<span class="sp-b">'+it.t+'</span>'
+      + '<span class="sp-c">⭐'+it.cost+'</span>'
+      + '<button class="shop-go'+(ok?'':' off')+'" onclick="redeemStar('+i+')">'+(ok?'兑换':'差 '+(it.cost-have)+' 星')+'</button></div>';
+  }
+  el.innerHTML = html;
+}
+function redeemStar(i) {
+  var it = STAR_SHOP[i];
+  if (!it) return;
+  if (weekStars() < it.cost) { toast('还差 '+(it.cost-weekStars())+' 颗星，继续攒 ⭐'); return; }
+  /* 从周一往后依次扣星 */
+  var left = it.cost, order = ['mon','tue','wed','thu','fri','sat','sun'];
+  for (var d=0; d<order.length && left>0; d++) {
+    var k = order[d], n = state.week.stars[k]||0;
+    var take = Math.min(n, left);
+    state.week.stars[k] = n - take; left -= take;
+  }
+  if (!state.extra.starLog) state.extra.starLog = [];
+  state.extra.starLog.push({d: todayStr(), e: it.e, t: it.t, cost: it.cost, claimed: false});
+  save(); renderWeek();
+  sndCoin();
+  toast('🏪 兑换成功：'+it.e+' '+it.t+' —— 记得找爸妈兑现哦');
+}
+function renderPending() {
+  var el = document.getElementById('starPending');
+  if (!el) return;
+  var pend = [];
+  var logs = state.extra.starLog || [];
+  for (var i=0;i<logs.length;i++) if (!logs[i].claimed) pend.push('<div class="pend" onclick="claimPending('+i+')">⏳ 待兑现：'+logs[i].e+' '+esc(logs[i].t)+'（'+(logs[i].d||'')+'）· 点一下表示已兑现</div>');
+  var tick = state.extra.ticketLog || [];
+  for (var j=0;j<tick.length;j++) if (!tick[j].claimed) pend.push('<div class="pend" onclick="claimTicket('+j+')">🎫 心愿券待兑现：'+esc(tick[j].t)+'（'+(tick[j].d||'')+'）· 点一下表示已兑现</div>');
+  el.innerHTML = pend.length ? ('<div style="margin-top:8px">'+pend.join('')+'</div>') : '';
+}
+function claimPending(i) {
+  var l = (state.extra.starLog||[])[i];
+  if (!l || l.claimed) return;
+  l.claimed = true; save(); renderPending();
+  toast('✅ 已兑现：'+l.e+' '+l.t+'，说话算话 👍');
+}
+function claimTicket(i) {
+  var l = (state.extra.ticketLog||[])[i];
+  if (!l || l.claimed) return;
+  l.claimed = true; save(); renderPending();
+  toast('✅ 心愿券兑现：'+l.t+'，孩子会很记得这一天的 🎉');
+}
+/* ===== 存钱闯关地图（里程碑奖励） ===== */
+var MILESTONES = [
+  {min:100,  e:'🥉', t:'第一关 · 破百',  r:'周末早餐自己点'},
+  {min:300,  e:'🥈', t:'第二关 · 三百',  r:'一本绘本 or 贴纸书'},
+  {min:600,  e:'🥇', t:'第三关 · 六百',  r:'游乐场 / 动物园玩一次'},
+  {min:1000, e:'🏆', t:'终极关 · 目标达成', r:'Switch 到手！'}
+];
+function renderMilestones() {
+  var el = document.getElementById('msList');
+  if (!el) return;
+  var saved = state.extra.total, mile = state.extra.mile || {}, html = '';
+  for (var i=0;i<MILESTONES.length;i++) {
+    var m = MILESTONES[i], got = saved >= m.min, claimed = !!mile[m.min];
+    html += '<div class="ms-item'+(claimed ? ' ok' : (got ? ' got' : ' lock'))+'">'
+      + '<span class="ms-ic">'+m.e+'</span>'
+      + '<span class="ms-b"><span class="ms-t">'+m.t+' · ¥'+m.min+'</span>'
+      + '<span class="ms-r">🎁 '+esc(m.r)+'</span></span>'
+      + (claimed
+          ? '<span class="ms-st">✅ 已兑现</span>'
+          : (got
+              ? '<button class="ms-go" onclick="claimMilestone('+m.min+')">🎁 找爸妈兑现</button>'
+              : '<span class="ms-st">🔒 还差 ¥'+(m.min-saved)+'</span>'))
+      + '</div>';
+  }
+  var nx = null;
+  for (var j=0;j<MILESTONES.length;j++) { if (saved < MILESTONES[j].min) { nx = MILESTONES[j]; break; } }
+  html += '<div class="sub" style="margin-top:6px">'+(nx
+    ? '下一关「'+nx.t+'」还差 ¥'+(nx.min-saved)+' —— 每天 ¥5 的话，约 '+Math.ceil((nx.min-saved)/5)+' 天 🚀'
+    : '🎉 全部关卡都过啦，接下来是卡带基金时间！')+'</div>';
+  el.innerHTML = html;
+}
+function claimMilestone(min) {
+  if (state.extra.total < min) { toast('还没存到 ¥'+min+' 哦'); return; }
+  if (!state.extra.mile) state.extra.mile = {};
+  if (state.extra.mile[min]) { toast('这一关已经兑现过啦 ✅'); return; }
+  state.extra.mile[min] = true;
+  var m = null;
+  for (var i=0;i<MILESTONES.length;i++) if (MILESTONES[i].min===min) m = MILESTONES[i];
+  save(); renderWeek();
+  sndLevel();
+  showCele(m ? m.e : '🎁', '关卡达成！', (m ? m.r : '') + ' —— 让爸妈兑现吧');
 }
 function dealHint(n) {
   if (n>=15) return '—— 太厉害了，小约定必须兑现！🎉';
@@ -2559,7 +2752,7 @@ function tapDayStar(k){
   state.week.stars[k] = ((state.week.stars[k]||0)+1) % 4;
   save(); renderWeek();
 }
-function saveDeal(v){ state.week.deal=v; save(); }
+
 function newWeek() {
   if (!confirm('开启新的一周？本周的星星和收入统计会清零（存钱罐、字卡和口算记录都保留）。\n记得先把本周赚到的钱真的放进存钱罐哦 🐷')) return;
   var d = blankWeek(); d.deal = '';
@@ -2608,21 +2801,17 @@ function updateScoreCard() {
   }
   updateSwitchCard();
 }
-/* Switch 存钱进度 + 家长补齐承诺 + 过年前能不能赶上的估算 */
+/* Switch 存钱进度（全部靠自己赚）+ 过年前能不能赶上的估算 */
 function updateSwitchCard() {
   var saved = state.extra.total;
-  var goal = state.extra.swGoal||1000;          /* 我的目标 */
-  var promise = state.extra.promise||0;         /* 爸爸补齐 */
+  var goal = state.extra.swGoal||1000;          /* 我的目标：自己赚够 */
   var pct = Math.min(100, Math.round(saved/goal*100));
   var fill = document.getElementById('swFill');
   if (fill) fill.style.width = pct+'%';
   var line = document.getElementById('swLine');
-  if (line) line.innerHTML = '🐷 我已存到 <b>¥'+saved+'</b> / ¥'+goal+'（'+pct+'%）'
-    + (saved>=goal ? ' —— 🎉 我的目标达成！爸爸兑现 ¥'+promise+'，Switch 安排！'
+  if (line) line.innerHTML = '🐷 我自己赚到 <b>¥'+saved+'</b> / ¥'+goal+'（'+pct+'%）'
+    + (saved>=goal ? ' —— 🎉 目标达成，全靠我自己！'
       + (saved-goal>0 ? ' 多赚的 ¥'+(saved-goal)+' 进【卡带基金】🃏' : '') : '');
-  var pl = document.getElementById('swPromise');
-  if (pl) pl.innerHTML = '👨 家长补齐承诺：我已存 ¥'+saved+' + 爸爸补 ¥'+promise+' = 合计 ¥'+(saved+promise)+' 🎮'
-    + '<br><span style="font-size:12px">（目标合计 ¥'+(goal+promise)+' ＝ 我存满 ¥'+goal+' ＋ 爸爸补 ¥'+promise+'）</span>';
   var eta = document.getElementById('swEta');
   if (eta) {
     var days = Math.ceil((new Date(CNY_DATE) - new Date(todayStr())) / 86400000);
@@ -2643,11 +2832,7 @@ function setSwGoal(v) {
   state.extra.swGoal = (isNaN(n)||n<100) ? 100 : n;
   save(); updateSwitchCard();
 }
-function setPromise(v) {
-  var n = parseInt(v, 10);
-  state.extra.promise = (isNaN(n)||n<0) ? 0 : n;
-  save(); updateSwitchCard();
-}
+
 
 /* ================= 存钱曲线图 ================= */
 function drawSwChart() {
