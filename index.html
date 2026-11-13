@@ -2128,6 +2128,7 @@ function engDone() {
   if (!state.eng.today) state.eng.today = [];
   state.eng.today.push(curEngIdx);
   logScore('eng', '英语场景', pay);
+  curEngIdx = -1;   /* 领奖后不再指向旧场景：再点同一图标会走正常换场景流程，不会误报「已经在练啦」 */
   save(); renderEngPage(); renderWage();
   if (!wasUnlocked && engAdvUnlocked()) { sndLevel(); toast('🎉 基础 27 个场景集齐！「进阶场景」解锁，每个 ¥6，快去看看！'); return; }
   sndCoin();
@@ -2453,9 +2454,8 @@ function renderQuiz() {
   }
   if (mq.done) {
     var secs = ((Date.now()-mq.start)/1000).toFixed(1);
-    var stars = mq.right===10 ? '⭐⭐⭐' : mq.right>=7 ? '⭐⭐' : '⭐';
     el.innerHTML = '<div class="mq-q">'+(mq.right===10?'🏆':'📝')+'</div>'
-      + '<div class="mq-prog">用时 <b>'+secs+'</b> 秒 · 答对 <b>'+mq.right+'</b>/10 · '+stars+'</div>'
+      + '<div class="mq-prog">用时 <b>'+secs+'</b> 秒 · 答对 <b>'+mq.right+'</b>/10</div>'
       + (mq.right===10 ? '<div class="mq-prog">🎉 全对！'+(mq.pay>0 ? '这场赚了 ¥'+mq.pay+'（含满分奖金）' : '（超时或今日已满，这场只记成绩不计钱）')+'</div>' : '<div class="mq-prog">只跟昨天的自己比，明天再战 💪</div>')
       + '<button class="btn btn-green" onclick="startQuiz()">🔁 再来一轮</button>';
     return;
