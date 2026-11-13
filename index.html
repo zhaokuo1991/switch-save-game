@@ -126,6 +126,8 @@
   .story-btn.done  { background:#d3dcea; color:#5f7089; }
   .story-btn.done small { color:#8fa0b8; }
   .story-note { font-size:11.5px; color:#b0954e; margin-top:9px; text-align:center; }
+  .story-comp { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:11px; }
+  .story-comp .sc-l { font-size:12.5px; color:#8a6d1f; font-weight:bold; }
   /* ---- 故事书架弹窗 ---- */
   .shelf-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:54vh; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px; }
   .shelf-item { background:#fffdf3; border:2px solid #ecd9a4; border-radius:12px; padding:10px 10px; cursor:pointer; text-align:left; font-size:13.5px; color:#5d4a1f; font-weight:bold; display:flex; gap:7px; align-items:center; min-height:46px; }
@@ -1095,8 +1097,8 @@ function storyToday() {   /* 今天的故事（当天有效；旧版「主题种
   var STORY_EPOCH = Math.floor(new Date(2026,10,13).getTime()/86400000);
   var idx = (Math.floor(Date.now()/86400000) - STORY_EPOCH + STORY_BOOK.length*10) % STORY_BOOK.length;
   sp = (sp && sp.date === todayStr())
-    ? {date: sp.date, idx: idx, paidRead: !!sp.paidRead, paidListen: !!sp.paidListen}   /* 兼容旧数据：保留今天已领的钱 */
-    : {date: todayStr(), idx: idx, paidRead: false, paidListen: false};
+    ? {date: sp.date, idx: idx, paidRead: !!sp.paidRead, paidListen: !!sp.paidListen, companion: sp.companion || '爸爸'}   /* 兼容旧数据：保留今天已领的钱 */
+    : {date: todayStr(), idx: idx, paidRead: false, paidListen: false, companion: '爸爸'};
   state.extra.story = sp;
   save();
   return sp;
@@ -1106,6 +1108,7 @@ function renderStoryBox() {
   if (!el) return;
   var sp = storyToday();
   var b = STORY_BOOK[sp.idx];
+  var comp = sp.companion || '爸爸';
   el.innerHTML = '<div class="story-card">'
     + '<div class="story-head"><span class="se">'+b.e+'</span><span class="st">'+esc(b.t)+'</span><span class="story-cat">'+esc(b.c)+'</span></div>'
     + '<div class="story-text">'+esc(b.txt)+'</div>'
@@ -1113,7 +1116,11 @@ function renderStoryBox() {
     + '<button class="story-btn '+(sp.paidRead ? 'done' : 'read')+'" onclick="storyPay(\'read\')"><span>📖 孩子读，爸妈听</span><small>'+(sp.paidRead ? '✓ 今天已领 ¥3' : '+¥3')+'</small></button>'
     + '<button class="story-btn '+(sp.paidListen ? 'done' : 'listen')+'" onclick="storyPay(\'listen\')"><span>🌙 爸妈读，孩子听</span><small>'+(sp.paidListen ? '✓ 今天已领 ¥1' : '+¥1')+'</small></button>'
     + '</div>'
-    + '<div class="story-note">每天可以读/听两个故事：孩子读一次 +¥3 · 爸妈读一次 +¥1 · 换篇去 📚 书架挑</div>'
+    + '<div class="story-comp"><span class="sc-l">👥 这次的陪伴人：</span>'
+    + '<span class="chip'+(comp==='爸爸' ? ' sel' : '')+'" onclick="setCompanion(\'爸爸\')">爸爸</span>'
+    + '<span class="chip'+(comp==='妈妈' ? ' sel' : '')+'" onclick="setCompanion(\'妈妈\')">妈妈</span>'
+    + '<span class="chip'+(comp==='可乐' ? ' sel' : '')+'" onclick="setCompanion(\'可乐\')">可乐</span></div>'
+    + '<div class="story-note">每天可以读/听两个故事：孩子读一次 +¥3 · 爸妈读一次 +¥1 · 换篇去 📚 书架挑<br>领钱时会记进当天明细：「谁」陪的写得清清楚楚</div>'
     + '</div>';
 }
 function storyPay(kind) {   /* 故事朗读计费：孩子读 ¥3 · 爸妈读 ¥1，各每天一次（每天最多两个故事） */
@@ -1124,13 +1131,25 @@ function storyPay(kind) {   /* 故事朗读计费：孩子读 ¥3 · 爸妈读 �
   var amt = kind === 'read' ? 3 : 1;
   var pay = Math.min(amt, kidRemaining());
   if (pay === 0) { sndOk(); toast('今日工资已满 ¥'+KID_CAP+'，故事照读，这场算加演 💪'); return; }
-  logScore('task', kind === 'read' ? '故事:孩子读' : '故事:爸妈读', pay);
+  var comp = sp.companion || '爸爸';
+  logScore('task', kind === 'read' ? ('故事:孩子读·'+comp+'陪') : ('故事:爸妈读·'+comp+'读'), pay);
   if (kind === 'read') sp.paidRead = true; else sp.paidListen = true;
   save();
   renderStoryBox(); renderWage(); renderHero();
-  var left = (!sp.paidRead || !sp.paidListen) ? ' 今天还能'+(sp.paidRead ? '听爸妈读一篇 +¥1' : '自己读一篇 +¥3')+'哦' : '';
+  var left = (!sp.paidRead || !sp.paidListen) ? ' 今天还能'+(sp.paidRead ? '听'+(sp.companion==='可乐'?'爸妈':'')+('读一篇 +¥1') : '自己读一篇 +¥3')+'哦' : '';
   sndCoin();
-  toast(kind === 'read' ? ('📖 「'+b.t+'」读得真好 +¥'+pay+'！'+left) : ('🌙 「'+b.t+'」听完 +¥'+pay+'！'+left));
+  toast(kind === 'read'
+    ? ('📖 '+(comp==='可乐' ? '可乐自己读了' : comp+'陪着读了')+'「'+b.t+'」+¥'+pay+'！'+left)
+    : ('🌙 '+comp+'读了「'+b.t+'」，可乐听完 +¥'+pay+'！'+left));
+}
+function setCompanion(name) {   /* 家长选择这次的陪伴人：爸爸 / 妈妈 / 可乐，领钱时写进当天明细 */
+  var sp = storyToday();
+  if (sp.companion === name) return;
+  sp.companion = name;
+  save();
+  sndOk();
+  renderStoryBox();
+  toast('👥 好的，这次的陪伴人记成「'+name+'」');
 }
 var shelfCat = '全部';
 function renderShelf() {
