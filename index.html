@@ -547,15 +547,15 @@
   <!-- ============ 周目标 ============ -->
   <section id="tab-week" class="tab">
     <div class="card" style="border:2.5px solid #e84393; background:#fff0f7;">
-      <h2>🐷 Switch 存钱罐（目标：过年前拿下！）</h2>
+      <h2>🐷 Switch 2 存钱罐（目标：过年前拿下！）</h2>
       <div class="progress-wrap"><div class="progress-fill" id="swFill"></div></div>
       <div class="score-line" id="swLine"></div>
       <div class="score-detail" id="swEta"></div>
       <canvas id="swChart" style="width:100%; height:150px; margin-top:6px;"></canvas>
       <div style="display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap;">
         <span style="font-size:13px; color:#5a6b7d; white-space:nowrap;">我的存钱目标</span>
-        <input type="number" class="goal-in" id="swGoal" value="1000" inputmode="numeric" enterkeyhint="done" onchange="setSwGoal(this.value)">
-        <span style="font-size:12px; color:#8a97a6;">元 —— 自己赚够它</span>
+        <input type="number" class="goal-in" id="swGoal" value="3000" inputmode="numeric" enterkeyhint="done" onchange="setSwGoal(this.value)">
+        <span style="font-size:12px; color:#8a97a6;">元 —— 自己赚够它（Switch 2 约 ¥3000）</span>
       </div>
       <div class="sub" style="margin-top:8px">💪 罐子里每一分都是自己赚的，<b>没有大人补齐</b>——赚多少存多少，这才叫真本事。</div>
       <button class="btn btn-blue" onclick="openPay()">🧾 周日发薪日 · 领取本周工资单</button>
@@ -931,7 +931,7 @@ function defState() {
     egg: null,                              /* 每日彩蛋 {date, tab, found} */
     parent: {date: todayStr(), items: {}},  /* items: {ai, sport, sleep} */
     scores: [],                             /* 得分流水：{d, cat, label, pts} */
-    extra: {total:0, swGoal:1000, streak:{count:0,last:''}, stickers:{}},  /* 已存金额/我的目标/连续天数/贴纸 */
+    extra: {total:0, swGoal:3000, streak:{count:0,last:''}, stickers:{}},  /* 已存金额/我的目标(Switch 2 ¥3000)/连续天数/贴纸 */
     chars: [],
     math: [],
     week: blankWeek()
@@ -989,9 +989,10 @@ function rollover() {
   }
   if (!state.parent || state.parent.date !== t) { state.parent = {date:t, items:{}}; }
   if (!state.scores) { state.scores = []; }
-  if (!state.extra) { state.extra = {total:0, swGoal:1000, streak:{count:0,last:''}, stickers:{}}; }
+  if (!state.extra) { state.extra = {total:0, swGoal:3000, streak:{count:0,last:''}, stickers:{}}; }
   else {
-    if (state.extra.swGoal == null) { state.extra.swGoal = 1000; }   /* 兼容旧数据 */
+    /* 兼容旧数据：旧版默认 1000（买不到 Switch 2），自动升到 3000；家长自己设的更高目标保留 */
+    if (state.extra.swGoal == null || state.extra.swGoal <= 1000) { state.extra.swGoal = 3000; }
   }
   if (state.mood && state.mood.date !== t) { state.mood = null; }   /* 心情每日清零 */
   if (!state.achievements) { state.achievements = {}; }
@@ -1280,7 +1281,9 @@ function tapMood(i) {
 /* ================= 存钱宠物 ================= */
 function petStage() {
   var t = state.extra.total;
-  if (t>=1000) return {e:'🦖', n:'守护飞龙', note:'它已经完全长大，是存钱罐最忠实的守护者！'};
+  if (t>=3000) return {e:'🐲', n:'存钱神龙', note:'3000 到手！Switch 2 就靠它守着啦'};
+  if (t>=2000) return {e:'🐉', n:'飞天龙', note:'只差最后一千，谁也拦不住'};
+  if (t>=1000) return {e:'🦖', n:'小霸王龙', note:'路走了一半，它已经能帮你守钱了'};
   if (t>=600)  return {e:'🐢', n:'努力龟', note:'每天进步一点点，壳越来越硬啦'};
   if (t>=300)  return {e:'🐤', n:'跳跳鸡', note:'越来越活泼，一天一个样！'};
   if (t>=100)  return {e:'🐣', n:'破壳小宝', note:'睁眼看世界，第一次见到钱！'};
@@ -1290,7 +1293,7 @@ function renderPet() {
   var el = document.getElementById('petBox');
   if (!el) return;
   var p = petStage(), t = state.extra.total;
-  var nextT = t>=1000 ? null : (t>=600 ? 1000 : (t>=300 ? 600 : (t>=100 ? 300 : 100)));
+  var nextT = t>=3000 ? null : (t>=2000 ? 3000 : (t>=1000 ? 2000 : (t>=600 ? 1000 : (t>=300 ? 600 : (t>=100 ? 300 : 100)))));
   el.innerHTML = '<div class="hero-bar" style="border-color:#a55eea;background:linear-gradient(135deg,#f9f2fc,#fff)">'
     + '<span class="hero-lv" style="font-size:34px">'+p.e+'</span>'
     + '<div class="hero-mid"><div class="hero-t">'+p.n+'</div><div class="hero-s">'+p.note+'</div></div>'
@@ -1308,7 +1311,8 @@ var ACH = [
   {id:'train_14',   e:'🚀', t:'火箭机长',     d:'小火车连续 14 天开到终点'},
   {id:'save_100',   e:'💰', t:'小金库 ¥100',  d:'存钱罐攒到 100 元'},
   {id:'save_500',   e:'🐷', t:'半个 Switch',  d:'存钱罐攒到 500 元'},
-  {id:'save_1000',  e:'🎮', t:'目标达成',     d:'存钱罐攒到 1000 元'},
+  {id:'save_1000',  e:'🏃', t:'半程 ¥1000',   d:'存钱罐攒到 1000 元（走了一半）'},
+  {id:'save_3000',  e:'🎮', t:'Switch 2 到手', d:'存钱罐攒到 3000 元'},
   {id:'char_10',    e:'🔤', t:'识字 10 个',   d:'熟字城住进 10 个字'},
   {id:'char_30',    e:'📚', t:'识字 30 个',   d:'熟字城住进 30 个字'},
   {id:'char_50',    e:'🎓', t:'识字 50 个',   d:'熟字城住进 50 个字'},
@@ -1342,7 +1346,7 @@ function achConds() {
     first_task: achCount('task')>=1,
     math_full: full,
     train_3: streak>=3, train_7: streak>=7, train_14: streak>=14,
-    save_100: total>=100, save_500: total>=500, save_1000: total>=1000,
+    save_100: total>=100, save_500: total>=500, save_1000: total>=1000, save_3000: total>=3000,
     char_10: masteredChars()>=10, char_30: masteredChars()>=30, char_50: masteredChars()>=50,
     sticker_6: stickerKinds()>=6, sticker_16: stickerKinds()>=16, sticker_20: stickerKinds()>=20,
     eng_5: achCount('eng')>=5, parent_3: achCount('parent')>=3
@@ -2543,7 +2547,7 @@ function renderWeek() {
   var w = state.week;
   updateScoreCard();
   var gEl = document.getElementById('swGoal');
-  if (gEl && gEl !== document.activeElement) gEl.value = state.extra.swGoal||1000;
+  if (gEl && gEl !== document.activeElement) gEl.value = state.extra.swGoal||3000;
   var hc = '';
   for (var i=0;i<5;i++) {
     hc += '<input maxlength="1" value="'+esc(w.chars[i]||'')+'" oninput="setWChar('+i+',this.value)">';
@@ -2699,10 +2703,10 @@ function claimTicket(i) {
 }
 /* ===== 存钱闯关地图（里程碑奖励） ===== */
 var MILESTONES = [
-  {min:100,  e:'🥉', t:'第一关 · 破百',  r:'周末早餐自己点'},
-  {min:300,  e:'🥈', t:'第二关 · 三百',  r:'一本绘本 or 贴纸书'},
-  {min:600,  e:'🥇', t:'第三关 · 六百',  r:'游乐场 / 动物园玩一次'},
-  {min:1000, e:'🏆', t:'终极关 · 目标达成', r:'Switch 到手！'}
+  {min:300,  e:'🥉', t:'第一关 · 三百',   r:'周末早餐自己点'},
+  {min:1000, e:'🥈', t:'第二关 · 一千',   r:'一本绘本 or 贴纸书'},
+  {min:2000, e:'🥇', t:'第三关 · 两千',   r:'游乐场 / 动物园玩一整天'},
+  {min:3000, e:'🏆', t:'终极关 · Switch 2', r:'Switch 2 到手！'}
 ];
 function renderMilestones() {
   var el = document.getElementById('msList');
@@ -2724,7 +2728,7 @@ function renderMilestones() {
   var nx = null;
   for (var j=0;j<MILESTONES.length;j++) { if (saved < MILESTONES[j].min) { nx = MILESTONES[j]; break; } }
   html += '<div class="sub" style="margin-top:6px">'+(nx
-    ? '下一关「'+nx.t+'」还差 ¥'+(nx.min-saved)+' —— 每天 ¥5 的话，约 '+Math.ceil((nx.min-saved)/5)+' 天 🚀'
+    ? '下一关「'+nx.t+'」还差 ¥'+(nx.min-saved)+' —— 按本周速度（每天约 ¥'+Math.max(1, Math.round(weekTotal()/7))+'），约 '+Math.ceil((nx.min-saved)/Math.max(1, Math.round(weekTotal()/7)))+' 天 🚀'
     : '🎉 全部关卡都过啦，接下来是卡带基金时间！')+'</div>';
   el.innerHTML = html;
 }
@@ -2804,7 +2808,7 @@ function updateScoreCard() {
 /* Switch 存钱进度（全部靠自己赚）+ 过年前能不能赶上的估算 */
 function updateSwitchCard() {
   var saved = state.extra.total;
-  var goal = state.extra.swGoal||1000;          /* 我的目标：自己赚够 */
+  var goal = state.extra.swGoal||3000;          /* 我的目标：自己赚够 */
   var pct = Math.min(100, Math.round(saved/goal*100));
   var fill = document.getElementById('swFill');
   if (fill) fill.style.width = pct+'%';
@@ -2870,7 +2874,7 @@ function drawSwChart() {
     d.setDate(d.getDate()+1);
   }
 
-  var goal = state.extra.swGoal||1000;
+  var goal = state.extra.swGoal||3000;
   var maxY = Math.max(series[series.length-1], goal) * 1.1;
   var px = function(i){ return 8 + (w-34) * (series.length===1 ? 0 : i/(series.length-1)); };
   var py = function(v){ return H - 10 - (H-26) * (v/maxY); };
@@ -2911,7 +2915,7 @@ function openPay() {
   var total = weekTotal();   /* 发薪单金额 = 本周账本合计（含识字/英语/礼物），保证明细能加到总额 */
   var stars = 0, order = ['mon','tue','wed','thu','fri','sat','sun'];
   for (var q=0;q<order.length;q++) stars += (state.week.stars[order[q]]||0);
-  var goal = state.extra.swGoal||1000;
+  var goal = state.extra.swGoal||3000;
   var pct = Math.min(100, Math.round(state.extra.total/goal*100));
   document.getElementById('payBody').innerHTML =
     '<div class="score-line">本周全家工资：<b>¥'+total+'</b></div>'
