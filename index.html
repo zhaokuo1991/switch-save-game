@@ -451,7 +451,7 @@
     </div>
     <div class="card zone zone-old">
       <h3>🏆 熟字城</h3>
-      <div class="zs">识字规则：搬进来 = 会认 ¥1/字 · 点字卡认证「会写」再赚 ¥2/字 · 忘了搬回去也不扣钱</div>
+      <div class="zs">识字规则：搬进来 = 会认 ¥0.5/字（每天前 10 个）· 写满 10 遍点「会写认证」再 +¥0.5/字（每天封顶 ¥10）· 忘了搬回去也不扣钱</div>
       <div class="char-grid" id="gridOld"></div>
     </div>
   </section>
@@ -510,7 +510,7 @@
       <div class="score-line" id="wkScore"></div>
       <div class="score-detail" id="wkDetail"></div>
       <div class="pk-line" id="wkPK"></div>
-      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ 口算 ¥1~4 + 认字 ¥1/字 · 会写 ¥2/字 + 小火车 ¥2，<b>每天封顶 ¥40</b>；英语场景 ¥5~6/个（每天 2 个）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
+      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ 口算 ¥1~4 + 认字 ¥0.5/字（每天前 10 个）· 写满 10 遍认证 ¥0.5/字（写字日封顶 ¥10）+ 小火车 ¥2，<b>每天封顶 ¥40</b>；英语闯关 ¥5~6/关（每天 2 关）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
     </div>
     <div class="card">
       <h2>🎯 这周我想认识这 5 个字</h2>
@@ -587,6 +587,9 @@
 
     <h3>🔄 重新开始</h3>
     <button class="btn btn-gray" onclick="restartToday()">🔄 重新开始（今天）：清零今天的记录，从晚餐重新出发</button>
+
+    <h3>✍️ 写字验收（最近 3 天认证的字 · 抽查合格就不用管）</h3>
+    <div id="writeCheck"></div>
 
     <h3>📱 在 iPad 上玩（两种方式）</h3>
     <p>① <b>临时用（电脑要开着）</b>：在电脑上这个 html 所在文件夹里运行 <code>python -m http.server 8000</code>，iPad 连同一个 Wi-Fi，Safari 打开 <code>http://电脑IP:8000/文件名.html</code>。<br>
@@ -709,6 +712,18 @@ var CATS = {study:'📚 学习类 ¥2 起', sport:'🏃 运动类 ¥2 起', life
 var MAX_ROUNDS = 5;   /* 每项任务每天最多结算几轮（想放宽就改这个数） */
 var KID_CAP = 40;     /* 每日工资封顶（元）：任务+小火车+口算+识字+礼物计入；英语专项奖金与家长打卡不占额度。想调就改这里 */
 var CAP_CATS = {task:1, train:1, math:1, wall:1, gift:1};
+/* ---- 识字奖励规则（2026-11-13 改版）----
+   认字：¥0.5/字，每个字一生一次，每天最多 10 个（¥5 封顶）
+   写字：写满 10 遍才算学会，¥0.5/字，每个字一生一次，每天封顶 ¥10（=20 个字）
+   一个字「认+写」合计 ¥1；写字可被家长「打回重写」（扣回 ¥0.5） */
+var WALL_REC_PAY = 0.5, WALL_REC_CAP = 10;
+var WALL_WRITE_PAY = 0.5, WALL_WRITE_CAP = 10, WRITE_REPS = 10;
+function wallDay() {   /* 今日识字计数器（认字个数 / 写字已发金额），跨天自动清零 */
+  if (!state.extra.wallDay || state.extra.wallDay.date !== todayStr()) {
+    state.extra.wallDay = {date: todayStr(), rec: 0, write: 0};
+  }
+  return state.extra.wallDay;
+}
 function catToday(cat) {
   var t = todayStr(), s = 0;
   for (var i=0;i<state.scores.length;i++) {
@@ -863,6 +878,7 @@ function rollover() {
     if (cc.zone==='old' && cc.earned == null) cc.earned = 1;   /* 老字补记认字收入 ¥1（累计口径） */
     if (cc.zone==='old' && cc.wrote && !cc.earnedFix2) { cc.earned = (cc.earned||0) + 2; cc.earnedFix2 = true; }   /* 补记旧版会写认证 ¥2 */
     if (cc.zone==='old' && cc.paidRec == null) cc.paidRec = true;   /* 已在熟字城的老字：认字奖励视为已领，防止再刷一遍 */
+    if (cc.zone==='old' && cc.wrote && cc.paidWrite == null) cc.paidWrite = true;   /* 旧版会写认证（¥2）迁移：按新规则视为已领，防止按 ¥0.5 重发 */
     cc.dayEarn = wallTodayFor(cc.zi);   /* 今日该字收入：从账本重建，徽章合计=今日识字收入 */
   }
   save();
@@ -1373,6 +1389,25 @@ function renderStickers() {
 }
 
 /* ================= 家长打卡 ================= */
+function renderWriteCheck() {   /* 家长验收列表：最近 3 天认证「会写」的字，可打回重写 */
+  var el = document.getElementById('writeCheck');
+  if (!el) return;
+  var t = todayStr();
+  var lim = new Date(); lim.setDate(lim.getDate()-3);
+  var limStr = lim.getFullYear()+'-'+pad(lim.getMonth()+1)+'-'+pad(lim.getDate());
+  var rows = '', n = 0;
+  for (var i=0;i<state.chars.length;i++) {
+    var c = state.chars[i];
+    if (!c.paidWrite || !c.writeDate || c.writeDate < limStr) continue;
+    n++;
+    rows += '<div class="pitem"><span class="pi-e">✍</span><span class="pi-t">'+esc(c.zi)+(c.ci?'（'+esc(c.ci)+'）':'')+'</span>'
+      + '<span class="pi-d">'+esc(c.writeDate)+' 认证 · 写满 '+WRITE_REPS+' 遍</span>'
+      + '<span class="pi-s"><button class="btn btn-gray" style="font-size:12px;padding:6px 10px;margin:0" onclick="rejectWrite(\''+esc(c.zi)+'\')">✗ 打回重写</button></span></div>';
+  }
+  el.innerHTML = n
+    ? ('<div class="plist">'+rows+'</div><div class="sub">打回会扣回 ¥'+WALL_WRITE_PAY+' 并清空认证，孩子写满 '+WRITE_REPS+' 遍后重新认证。</div>')
+    : '<div class="empty-tip">最近 3 天没有新的写字认证。孩子点字卡里的「✍ 写满 '+WRITE_REPS+' 遍，认证 +¥'+WALL_WRITE_PAY+'」后会出现在这里，随机抽几个让他默写给你看 👀</div>';
+}
 function renderParent() {
   var el = document.getElementById('parentArea');
   if (!el) return;
@@ -1505,7 +1540,7 @@ function renderEngPage() {
       var scR = ENG_SCENES[tIdx];
       html += '<div class="pitem" onclick="openEngReview('+tIdx+')"><span class="pi-e">🎬</span>'
         + '<span class="pi-t">'+scR.t+'</span>'
-        + '<span class="pi-d">'+scR.s.length+' 个句型 · 换词练习，点开复习</span>'
+        + '<span class="pi-d">'+scR.s.length+' 个句型 · 闯关复习，点开看内容</span>'
         + '<span class="pi-s">📖</span></div>';
     }
     html += '</div></div>';
@@ -1530,7 +1565,7 @@ function renderEngPage() {
     for (var pc=0; pc<sc.s.length; pc++) totalRounds += sc.s[pc].items.length;
     var doneCount = 0;
     for (var pd=0; pd<engProgress.pat && pd<sc.s.length; pd++) doneCount += sc.s[pd].items.length;
-    if (engProgress.pat < sc.s.length) doneCount += Math.min(engProgress.round, sc.s[engProgress.pat].items.length);
+    if (engProgress.pat < sc.s.length) { ensureEngQuiz(sc.s[engProgress.pat]); doneCount += curEngQuiz.pos; }
     var allDone = engProgress.pat >= sc.s.length;
     html += '<div class="card" style="border:2.5px solid #2980b9; background:#f7fbff; margin-bottom:14px"><h2>🎬 场景 '+(n+1)+'：「'+sc.t+'」'
       + (sc.lv===2 ? '<span style="font-size:12px;color:#e67e22">（进阶 ¥6）</span>' : '<span style="font-size:12px;color:#8a97a6">（基础 ¥5）</span>')
@@ -1541,41 +1576,23 @@ function renderEngPage() {
     for (var p=0; p<sc.s.length && p<=engProgress.pat; p++) {
       var pat = sc.s[p];
       if (p < engProgress.pat) {   /* 已完成的句型：一行小结 */
-        html += '<div class="sub" style="margin:6px 0 0; color:#1e8449">📘 句型'+(CN[p]||p+1)+' ✅ 已完成 '+pat.items.length+' 轮 · '+pat.q+'</div>';
+        html += '<div class="sub" style="margin:6px 0 0; color:#1e8449">📘 句型'+(CN[p]||p+1)+' ✅ 已闯关 '+pat.items.length+' 词 · '+pat.q+'</div>';
         continue;
       }
-      /* 当前句型：问/答 + 当前轮 */
+      /* 当前句型：问句 + 闯关答题（听音选义 / 中文选词 / 填空） */
       var li0 = curEngLines.length;
-      curEngLines.push(pat.q); curEngLines.push(pat.a);
-      html += '<div class="cat-title">📘 句型'+(CN[p]||p+1)+'（换词 '+pat.items.length+' 轮）</div>'
+      curEngLines.push(pat.q);
+      html += '<div class="cat-title">📘 句型'+(CN[p]||p+1)+'（闯关 '+pat.items.length+' 词）</div>'
         + '<div class="eng-line"><span class="eng-who">🔵 问</span><span class="eng-txt" style="color:#2471a3">'+pat.q+'</span><span class="eng-spk" onclick="speakEng('+li0+')">🔊</span></div>'
-        + '<div class="eng-line"><span class="eng-who">🟢 答</span><span class="eng-txt" style="color:#1e8449">'+pat.a+'</span><span class="eng-spk" onclick="speakEng('+(li0+1)+')">🔊</span></div>'
-        + '<div class="sub" style="margin:-4px 0 2px">✨ 看词换句：说完点下面的按钮，才出下一轮</div>';
-      for (var r=0; r<pat.items.length; r++) {
-        var en = pat.items[r][0], zh = pat.items[r][1];
-        if (r < engProgress.round) {
-          html += '<div class="sub" style="margin:0; color:#1e8449">✅ 第'+(r+1)+'轮 '+pat.a.replace('___',en)+'（'+zh+'）</div>';
-        } else if (r === engProgress.round) {
-          var sent = pat.a.replace('___', en);
-          var spk = curEngLines.length;
-          curEngLines.push(sent);
-          html += '<div class="eng-line"><span class="eng-who">🟢 第'+(r+1)+'轮</span>'
-            + '<span class="eng-txt" style="color:#1e8449">'+sent+' <span style="font-size:11px;color:#999;font-weight:normal">（'+zh+'）</span></span>'
-            + '<span class="eng-spk" onclick="speakEng('+spk+')">🔊</span></div>';
-        }
-      }
-      break;   /* 只展开当前句型，后续句型等完成后再出 */
+        + '<div class="sub" style="margin:-4px 0 2px">✨ 先选对答案，再大声读出来——动过脑的钱才是自己的！</div>';
+      html += renderEngQuizHtml(pat, p);
+      break;   /* 只展开当前句型，后续句型等闯关完成后再出 */
     }
     if (allDone) {
-      html += '<div class="done-banner" style="margin-top:10px">🎉 全部 '+totalRounds+' 句都练完啦！</div>'
+      html += '<div class="done-banner" style="margin-top:10px">🎉 全部 '+totalRounds+' 词都闯过关啦！</div>'
         + '<button class="btn btn-blue" onclick="engDone()">✅ 领取场景奖金 +¥'+price+'！</button></div>';
     } else {
-      var pat = sc.s[engProgress.pat];
-      var lastRound = engProgress.round === pat.items.length - 1;
-      var lastPat = engProgress.pat === sc.s.length - 1;
-      var label = lastRound ? (lastPat ? '🎉 最后一句说完了！' : '✅ 这组说完了，进入句型'+(CN[engProgress.pat+1]||'')+' →')
-                            : '✅ 这轮说完了，下一轮 →';
-      html += '<button class="btn btn-green" onclick="engNextRound()">'+label+'</button></div>';
+      html += '<div class="pk-line" style="background:#eef4fd;color:#2471a3">答错不扣钱也不中断，把选错的词再选对一遍就算过关 💪</div></div>';
     }
   }
   if (!unlocked) {
@@ -1612,26 +1629,109 @@ function renderEngPage() {
   gal += '<div class="sub" style="text-align:center; margin-top:14px; padding-top:10px; border-top:1px dashed #e3eaf3">点图标 = 选定开练（场景卡联动替换）· 点 📖 = 只看内容不切换 · 已点亮 '+doneKinds+' / '+ENG_SCENES.length+' 个'+(doneKinds>=ENG_SCENES.length?' 🎉 全集齐，进入复习轮！':'')+'</div></div>';
   el.innerHTML = html + gal;
 }
-function engNextRound() {   /* 当前轮说完 → 显示下一轮；一组说完 → 下一个句型（自动朗读新内容） */
-  var sc = curEngScene;
-  if (!sc || engProgress.idx !== curEngIdx) return;
-  var pat = sc.s[engProgress.pat];
-  if (!pat) return;
-  var wasPat = engProgress.pat;
-  engProgress.round++;
-  if (engProgress.round >= pat.items.length) { engProgress.pat++; engProgress.round = 0; }
-  save();   /* 练习进度落盘，刷新页面不丢 */
-  sndOk();
-  renderEngPage();
-  /* 自动朗读：新句型完整读「问 → 答首句」（排队不截断），同句型只读新句子；全部练完不再朗读 */
-  if (engProgress.pat >= sc.s.length) return;
-  var np = sc.s[engProgress.pat];
-  if (engProgress.pat !== wasPat) {
-    speakEngText(np.q);
-    speakEngText(np.a.replace('___', np.items[0][0]), true);
-  } else {
-    speakEngText(np.a.replace('___', np.items[engProgress.round][0]));
+/* ---- 英语闯关：听音选义 / 中文选词 / 填空，答错重来，答对后跟读巩固 ---- */
+var curEngQuiz = null;   /* 内存态：当前句型的闯关题；刷新页面按当前句型重建 */
+function shuffleArr(a) {
+  for (var i=a.length-1;i>0;i--) { var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function buildEngQuiz(pat) {
+  var order = shuffleArr(pat.items.slice());
+  var list = [];
+  for (var i=0;i<order.length;i++) {
+    var it = order[i];
+    var r = Math.random();
+    var type = r < 0.4 ? 'listen' : (r < 0.7 ? 'pick' : 'fill');
+    var others = [];
+    for (var k=0;k<pat.items.length;k++) { if (pat.items[k][0] !== it[0]) others.push(pat.items[k]); }
+    others = shuffleArr(others);
+    var opts;
+    if (type === 'listen') opts = shuffleArr([it[1], others[0][1], others[1][1], others[2][1]]);
+    else                   opts = shuffleArr([it[0], others[0][0], others[1][0], others[2][0]]);
+    list.push({en: it[0], zh: it[1], type: type, opts: opts});
   }
+  curEngQuiz = {list: list, pos: 0, wrong: 0, phase: 'q', okIdx: -1, patIdx: engProgress.pat, sceneIdx: curEngIdx};
+}
+function ensureEngQuiz(pat) {   /* 同一场景同一句型复用进行中的题，不重置 */
+  if (!curEngQuiz || curEngQuiz.patIdx !== engProgress.pat || curEngQuiz.sceneIdx !== curEngIdx) buildEngQuiz(pat);
+}
+function engQAnswer(q) { return q.type === 'listen' ? q.zh : q.en; }
+function renderEngQuizHtml(pat, p) {
+  ensureEngQuiz(pat);
+  var q = curEngQuiz.list[curEngQuiz.pos];
+  var html = '<div class="mq-prog">第 '+(curEngQuiz.pos+1)+'/'+curEngQuiz.list.length+' 词 · 答对 '+((curEngQuiz.pos)-curEngQuiz.wrong < 0 ? 0 : curEngQuiz.pos-curEngQuiz.wrong)+' · 错 '+curEngQuiz.wrong+'</div>';
+  var li0 = curEngLines.length;
+  var sent = pat.a.replace('___', q.en);
+  curEngLines.push(sent);
+  if (curEngQuiz.phase === 'read') {   /* 答对后：完整句子 + 跟读 */
+    html += '<div class="eng-line"><span class="eng-who">🟢</span>'
+      + '<span class="eng-txt" style="color:#1e8449">'+esc(sent)+' <span style="font-size:11px;color:#999;font-weight:normal">（'+esc(q.zh)+'）</span></span>'
+      + '<span class="eng-spk" onclick="speakEng('+li0+')">🔊</span></div>'
+      + '<div class="sub" style="text-align:center;color:#1e8449">🎉 选对了！像刚才那样大声读出来：</div>'
+      + '<button class="btn btn-green" onclick="engReadDone()">🎤 我大声读完了 → 下一题</button>';
+    return html;
+  }
+  if (q.type === 'listen') {
+    html += '<div style="text-align:center;margin:10px 0 6px">'
+      + '<button class="btn btn-blue" style="font-size:22px;padding:16px 30px" onclick="speakEngText(\''+esc(q.en).replace(/'/g,"\\'")+'\')">🔊 点我听</button></div>'
+      + '<div class="sub" style="text-align:center;margin-bottom:8px">刚才说的是哪个意思？</div>';
+    html += '<div class="mq-opts">';
+    for (var o=0;o<q.opts.length;o++) {
+      html += '<button class="mq-opt" style="font-size:20px;padding:16px 8px" onclick="engPick(this,\''+esc(q.opts[o]).replace(/'/g,"\\'")+'\')">'+esc(q.opts[o])+'</button>';
+    }
+    html += '</div>';
+  } else {
+    var ask = q.type === 'pick' ? ('「'+esc(q.zh)+'」用英语怎么说？') : ('选词填空：<b>'+esc(pat.q)+'</b> ' + esc(pat.a).replace('___','<span style="color:#e67e22">___</span>'));
+    html += '<div class="sub" style="text-align:center;margin:8px 0">'+ask+'</div>';
+    html += '<div class="sub" style="text-align:center;margin:0 0 8px"><span class="eng-spk" style="position:static;display:inline-block" onclick="speakEngText(\''+esc(q.en).replace(/'/g,"\\'")+'\')">🔊 听提示（用了提示这题也算对，但别偷懒哦）</span></div>';
+    html += '<div class="mq-opts">';
+    for (var o2=0;o2<q.opts.length;o2++) {
+      html += '<button class="mq-opt" style="font-size:19px;padding:15px 8px" onclick="engPick(this,\''+esc(q.opts[o2]).replace(/'/g,"\\'")+'\')">'+esc(q.opts[o2])+'</button>';
+    }
+    html += '</div>';
+  }
+  return html;
+}
+function engPick(btn, val) {
+  if (!curEngQuiz || curEngQuiz.phase !== 'q') return;
+  var q = curEngQuiz.list[curEngQuiz.pos];
+  var sc = ENG_SCENES[curEngIdx];
+  var pat = sc && sc.s[engProgress.pat];
+  if (!q || !pat) return;
+  if (String(val) === q.en || String(val) === q.zh) {
+    curEngQuiz.phase = 'read';
+    sndOk();
+    renderEngPage();
+    speakEngText(pat.a.replace('___', q.en));   /* 答对后示范整句，孩子跟读 */
+  } else {
+    if (btn) { btn.classList.add('no'); btn.disabled = true; }
+    curEngQuiz.wrong++;
+    curEngQuiz.list.push(q);   /* 答错的排到队尾，再选对才算过关 */
+    curEngQuiz.phase = 'lock';   /* 反馈期间锁住，防止连点重复计错 */
+    sndBad();
+    toast('正确答案是「'+engQAnswer(q)+'」——记住它，等下还会出现 😄');
+    setTimeout(function(){ curEngQuiz.pos++; curEngQuiz.phase = 'q'; renderEngPage(); }, 700);
+  }
+}
+function engReadDone() {
+  if (!curEngQuiz || curEngQuiz.phase !== 'read') return;
+  curEngQuiz.pos++;
+  curEngQuiz.phase = 'q';
+  var sc = ENG_SCENES[curEngIdx];
+  if (curEngQuiz.pos >= curEngQuiz.list.length) {   /* 本句型闯关完成 → 下一句型 */
+    engProgress.pat++;
+    engProgress.round = 0;
+    state.eng.progress = {idx: curEngIdx, pat: engProgress.pat, round: 0};
+    save();
+    curEngQuiz = null;
+    sndOk();
+    renderEngPage();
+    if (sc && engProgress.pat < sc.s.length) speakEngText(sc.s[engProgress.pat].q);   /* 自动读下一句型的问句 */
+    return;
+  }
+  renderEngPage();
+  var nq = curEngQuiz && curEngQuiz.list[curEngQuiz.pos];
+  if (nq && nq.type === 'listen') speakEngText(nq.en);
 }
 function speakEngText(text, noCancel) {   /* 单句朗读；noCancel=true 时排队接在后面，不打断正在读的句子 */
   try {
@@ -1879,7 +1979,7 @@ function renderWall() {
     : '认识 '+next+' 个字 = ' + (next===10?'种下一棵小树 🌱':next===20?'开出一朵花 🌸':next===40?'升级识字小达人 🎖️':'城堡大赢家 🏆');
   document.getElementById('wallStat').innerHTML =
     '⭐ 我已经认识 <b>'+old+'</b> 个字啦！&nbsp; ' + tip
-    + '<br>💰 今日识字收入 <b>¥'+catToday('wall')+'</b> <span style="font-size:11px;color:#98a6b5">（会认搬家 +¥1/字 · 会写认证 +¥2/字 · 计入今日工资封顶）</span>';
+    + '<br>💰 今日识字收入 <b>¥'+catToday('wall')+'</b> <span style="font-size:11px;color:#98a6b5">（会认搬家 +¥0.5/字 · 每天前 10 个 · 写满 10 遍认证 +¥0.5/字 · 写字日封顶 ¥10 · 计入今日工资封顶）</span>';
 }
 function addChar() {
   var zi = document.getElementById('inZi').value.trim();
@@ -1906,10 +2006,10 @@ function openChar(i) {
     + '<br><span style="font-size:11px;color:#98a6b5">点下面的按钮听读音</span>';
   document.getElementById('cmInfo').innerHTML = info;
   document.getElementById('cmMove').textContent = c.zone==='new'
-    ? ('🏠 搬家到熟字城（会认了！'+(c.paidRec?'奖励已领过':'+¥1')+'）')
+    ? ('🏠 搬家到熟字城（会认了！'+(c.paidRec?'奖励已领过':'+¥'+WALL_REC_PAY)+'）')
     : '🌱 搬回生字村（再认识一次，不扣钱）';
   var wb = document.getElementById('cmWrite');
-  if (c.zone==='old') { wb.style.display='block'; wb.textContent = c.wrote ? '✍ 会写已认证 ✓' : '✍ 我会写这个字了！认证 +¥2'; }
+  if (c.zone==='old') { wb.style.display='block'; wb.textContent = c.wrote ? '✍ 会写已认证 ✓' : ('✍ 写满 '+WRITE_REPS+' 遍，认证 +¥'+WALL_WRITE_PAY); }
   else { wb.style.display='none'; }
   document.getElementById('charMask').classList.add('show');
 }
@@ -1929,21 +2029,28 @@ function moveChar() {
   if (toOld) c.learnDate = todayStr();   /* 记录学会日期 */
   else c.learnDate = null;               /* 搬回生字村则清除，重新学 */
   var msg;
-  if (toOld) {   /* 识字规则①：会认（搬进熟字城）¥1/字，每个字只发一次 */
+  if (toOld) {   /* 识字规则①：会认（搬进熟字城）¥0.5/字，每个字只发一次，每天最多 10 个 */
     if (c.paidRec) {   /* 已经领过认字钱：搬来搬去不再重复发 */
       sndOk();
       msg = '🎉 「'+c.zi+'」又搬回熟字城！这个字的认字奖励已经领过啦，今天是复习巩固 💪';
     } else {
-      var pay = Math.min(1, kidRemaining());
+      var wd = wallDay();
+      var slotPay = wd.rec >= WALL_REC_CAP ? 0 : WALL_REC_PAY;   /* 每天最多认 10 个有奖励的字 */
+      var pay = Math.min(slotPay, kidRemaining());
       if (pay > 0) {
         c.paidRec = true;   /* 标记：这个字以后不再发认字钱 */
         c.earned = (c.earned||0) + pay;
+        wd.rec++;
         logScore('wall', '认字:'+c.zi, pay);
         sndCoin();
-        msg = '🎉 「'+c.zi+'」搬进熟字城，认字赚了 ¥'+pay+'！';
+        msg = '🎉 「'+c.zi+'」搬进熟字城，认字赚了 ¥'+pay+'！今天认字 '+wd.rec+'/'+WALL_REC_CAP+' 个';
+        if (wd.rec === WALL_REC_CAP) msg += '（认字奖励名额用完啦，明天继续 💪）';
+      } else if (slotPay === 0) {
+        sndOk();
+        msg = '🎉 「'+c.zi+'」搬进熟字城！今天的认字奖励名额（'+WALL_REC_CAP+' 个）用完了，明天再搬进来就能领 ¥'+WALL_REC_PAY+' 💪';
       } else {
         sndOk();
-        msg = '🎉 「'+c.zi+'」搬进熟字城！今日工资已满 ¥'+KID_CAP+'，明天再搬进来就能领 ¥1 💪';
+        msg = '🎉 「'+c.zi+'」搬进熟字城！今日工资已满 ¥'+KID_CAP+'，明天再搬进来就能领 ¥'+WALL_REC_PAY+' 💪';
       }
     }
   } else {
@@ -1954,21 +2061,46 @@ function moveChar() {
   save(); closeChar(); renderWall(); renderWage();
   toast(msg);
 }
-function writeChar() {   /* 识字规则②：会写认证 ¥2/字（每个字限一次） */
+function writeChar() {   /* 识字规则②：写满 10 遍认证 ¥0.5/字（每个字限一次，每天封顶 ¥10） */
   if (curChar < 0) return;
   var c = state.chars[curChar];
   if (c.zone !== 'old') { toast('先把它搬进熟字城，再来认证会写哦'); return; }
-  if (c.wrote) { toast('这个字已经认证过啦 ✅'); return; }
-  var pay = Math.min(2, kidRemaining());
-  if (pay === 0) { sndOk(); toast('今日工资已满 ¥'+KID_CAP+'，明天再认证，「¥2 不会跑」💪'); return; }
+  if (c.paidWrite || c.wrote) { toast('这个字已经认证过啦 ✅ 想重新写可以找爸妈「打回重写」'); return; }
+  var wd = wallDay();
+  var capPay = Math.max(0, WALL_WRITE_CAP - wd.write);   /* 写字日封顶剩余额度 */
+  var pay = Math.min(WALL_WRITE_PAY, capPay, kidRemaining());
+  if (capPay === 0) { sndOk(); toast('今天的写字奖金已封顶 ¥'+WALL_WRITE_CAP+'，写得够多啦！明天继续 ✍'); return; }
+  if (pay === 0) { sndOk(); toast('今日工资已满 ¥'+KID_CAP+'，明天再认证，「¥'+WALL_WRITE_PAY+' 不会跑」💪'); return; }
   logScore('wall', '会写:'+c.zi, pay);
   c.wrote = true;
-  c.earnedFix2 = true;   /* 标记会写收入已记账，避免迁移重复补 */
+  c.paidWrite = true;
+  c.writeDate = todayStr();   /* 记录认证日期，家长验收列表用 */
+  c.earnedFix2 = true;        /* 标记会写收入已记账，避免迁移重复补 */
   c.earned = (c.earned||0) + pay;
+  wd.write += pay;
   c.dayEarn = wallTodayFor(c.zi);
   save(); closeChar(); renderWall(); renderWage();
   sndCoin();
-  toast('✍ 「'+c.zi+'」会写认证通过，赚了 ¥'+pay+'！');
+  toast('✍ 「'+c.zi+'」写满 '+WRITE_REPS+' 遍，认证通过赚了 ¥'+pay+'！（爸妈会抽查哦）');
+}
+function rejectWrite(zi) {   /* 家长验收：打回重写（扣回 ¥0.5，孩子重新写满再认证） */
+  for (var i=0;i<state.chars.length;i++) {
+    var c = state.chars[i];
+    if (c.zi !== zi || !c.paidWrite) continue;
+    var back = undoScore('会写:'+zi);
+    if (back === 0) {   /* 不是今天认证的：账本记一笔负数（logScore 会同步扣存钱罐） */
+      logScore('wall', '打回:'+zi, -WALL_WRITE_PAY);
+    } else {
+      state.extra.total = Math.max(0, state.extra.total - back);
+    }
+    c.wrote = false; c.paidWrite = false; c.writeDate = null;
+    var wd2 = wallDay(); wd2.write = Math.max(0, wd2.write - WALL_WRITE_PAY);   /* 额度还给孩子，当天重写可再认证 */
+    c.dayEarn = wallTodayFor(c.zi);
+    save(); renderWriteCheck(); renderWage(); renderHero(); renderWeek();
+    toast('「'+zi+'」已打回重写，存钱罐扣回 ¥'+WALL_WRITE_PAY);
+    return;
+  }
+  toast('没找到这个字的认证记录');
 }
 function delChar() {
   if (curChar<0) return;
@@ -2358,7 +2490,7 @@ function payDone() {
 function closePay(){ document.getElementById('payMask').classList.remove('show'); }
 
 /* ================= 家长弹窗 & 备份 ================= */
-function openParent(){ document.getElementById('parentMask').classList.add('show'); }
+function openParent(){ document.getElementById('parentMask').classList.add('show'); renderWriteCheck(); }
 function closeParent(){ document.getElementById('parentMask').classList.remove('show'); }
 function exportData(){ document.getElementById('bakArea').value = JSON.stringify(state); toast('已导出到文本框，全选复制保存即可'); }
 function applyRestore(s) {   /* 统一的恢复入口：桌面文本框备份 / iPad 文件备份都用它 */
