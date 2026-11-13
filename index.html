@@ -2902,11 +2902,12 @@ function drawSwChart() {
   ctx.lineTo(px(n-1), H-10); ctx.lineTo(px(0), H-10); ctx.closePath();
   ctx.fillStyle = 'rgba(46,204,113,.12)'; ctx.fill();
 
-  /* 最新点 + 金额标签 */
+  /* 最新点 + 金额标签（钳制在画布内，开局贴左也不会被裁掉） */
   ctx.beginPath(); ctx.arc(px(n-1), py(series[n-1]), 4.5, 0, 7);
   ctx.fillStyle = '#27ae60'; ctx.fill();
-  ctx.fillStyle = '#1e8449'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'right';
-  ctx.fillText('已存 ¥'+series[n-1], px(n-1)-4, py(series[n-1])-9);
+  var lx = Math.max(44, Math.min(w-16, px(n-1)));
+  ctx.fillStyle = '#1e8449'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('已存 ¥'+series[n-1], lx, py(series[n-1])-9);
 }
 
 /* ================= 发薪日仪式 ================= */
