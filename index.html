@@ -133,6 +133,7 @@
   .shelf-item .sc { font-size:10px; color:#b0954e; font-weight:normal; flex:none; }
   .shelf-item.open { border-color:#3fb27f; background:#f1faf5; }
   .shelf-cur { font-size:12.5px; color:#8a6d1f; background:#fff6df; border-radius:10px; padding:9px 12px; margin-top:10px; }
+  .shelf-cats { margin-bottom:10px; }
   .plist { display:flex; flex-direction:column; gap:8px; }
   .pitem { display:flex; align-items:center; gap:8px; border:2px solid #d7e0ec; border-radius:12px; padding:10px 12px; cursor:pointer; background:#fbfdff; }
   .pitem.on { border-color:#5b8def; background:#eef4fd; }
@@ -411,9 +412,9 @@
     </div>
     <div class="card">
       <h2>📖 睡前故事书</h2>
-      <div class="sub">24 篇经典故事（寓言 · 成语 · 童话），每天自动翻开新的一篇，读完领钱——孩子读给爸妈听 +¥3 · 爸妈读给孩子听 +¥1（各每天一次）</div>
+      <div class="sub">40 篇故事（侦探 · 恐龙 · 超能 · 救援 · 太空 · 寓言 · 成语 · 童话），每天自动翻开新的一篇，读完领钱——孩子读给爸妈听 +¥3 · 爸妈读给孩子听 +¥1（各每天一次）</div>
       <div id="storyBox"></div>
-      <button class="btn btn-blue" style="margin-top:10px" onclick="openShelf()">📚 打开故事书架 · 24 篇随便挑</button>
+      <button class="btn btn-blue" style="margin-top:10px" onclick="openShelf()">📚 打开故事书架 · 全部 40 篇随便挑</button>
     </div>
     <div class="card">
       <h2>😊 今天心情怎么样</h2>
@@ -654,10 +655,11 @@
 <div class="modal-mask" id="shelfMask" onclick="if(event.target===this)closeShelf()">
   <div class="modal">
     <button class="x" onclick="closeShelf()">✕</button>
-    <h2>📚 故事书架（24 篇经典）</h2>
+    <h2>📚 故事书架</h2>
+    <div class="shelf-cats chips" id="shelfCats" style="justify-content:flex-start"></div>
     <div class="shelf-list" id="shelfList"></div>
     <div class="shelf-cur" id="shelfCur"></div>
-    <div class="sub" style="margin-top:8px">点一篇就换成今晚的故事。领钱规则不变：孩子读 +¥3 · 爸妈读 +¥1，各每天一次——换故事不会多领，老老实实读完才有钱 😄</div>
+    <div class="sub" style="margin-top:8px">🔥 是新加的侦探 / 恐龙 / 超能 / 救援 / 太空故事。点一篇就换成今晚的故事。领钱规则不变：孩子读 +¥3 · 爸妈读 +¥1，各每天一次——换故事不会多领，老老实实读完才有钱 😄</div>
   </div>
 </div>
 
@@ -1001,8 +1003,27 @@ var STORY_BOOK = [
   {e:'👠',c:'童话',t:'灰姑娘',txt:'继母和两个姐姐把所有家务都丢给灰姑娘，还不许她去王子的舞会。魔法仙女出现了，把南瓜变成马车、老鼠变成骏马，送她一双水晶鞋——可是午夜十二点，魔法会全部消失。灰姑娘慌忙跑走，掉了一只鞋。王子拿着鞋找遍全城，终于找到了她。善良的人，好运不会一直缺席。'},
   {e:'❄️',c:'童话',t:'白雪公主',txt:'王后从魔镜那里听说白雪公主比自己美，气得派猎人害她，后来又扮成老婆婆，用毒苹果把她害得昏睡过去。七个小矮人一直保护着她。王子路过，用真爱唤醒了公主，恶毒的王后再也神气不起来。善良和真心，比魔镜说的"最漂亮"重要得多。'},
   {e:'👑',c:'童话',t:'青蛙王子',txt:'公主的小金球掉进了井里，青蛙说："让我陪你吃饭、一起玩，我就帮你捡。"公主满口答应，捡回金球却跑掉了。国王知道后说："答应别人的事，就一定要做到。"公主只好依约请青蛙吃饭。第二天青蛙变成了一位王子——他被巫婆施了魔法，只有真诚守约才能解除。诚信能创造奇迹。'},
-  {e:'🌱',c:'童话',t:'杰克和魔豆',txt:'杰克用家里唯一的牛，换了三颗"魔豆"，妈妈气得把豆子扔出窗外。一夜之间，豆藤长上了云端！杰克顺着豆藤爬上去，在巨人的城堡里发现会下金蛋的母鸡。趁巨人熟睡，他抱着母鸡溜下来，砍断追来的豆藤。从此他和妈妈再也不愁吃穿。勇敢加上动脑筋，穷日子也能开出金花。'}
+  {e:'🌱',c:'童话',t:'杰克和魔豆',txt:'杰克用家里唯一的牛，换了三颗"魔豆"，妈妈气得把豆子扔出窗外。一夜之间，豆藤长上了云端！杰克顺着豆藤爬上去，在巨人的城堡里发现会下金蛋的母鸡。趁巨人熟睡，他抱着母鸡溜下来，砍断追来的豆藤。从此他和妈妈再也不愁吃穿。勇敢加上动脑筋，穷日子也能开出金花。'},
+  /* ---- 2026-11-13 新增：孩子爱追的类型（侦探/恐龙/超能/救援/太空）---- */
+  {e:'🐕',c:'侦探',t:'拉布拉多警长·消失的骨头',hot:1,txt:'警长拉布接到报案：小狗豆豆埋在树下的大骨头不见了。拉布趴下来闻了闻泥土，地上有两条脚印，一条大、一条小。顺着小脚印，他找到邻居小猫米米——原来米米把骨头当成玩具挖走了。拉布没有大声批评，只说了一句："别人的东西，要先问一声。"米米红着脸把骨头送了回去。破案不靠吼，靠观察和讲道理。'},
+  {e:'🐾',c:'侦探',t:'拉布拉多警长·怪脚印',hot:1,txt:'公园的花圃被踩坏了，地上留下一串奇怪的脚印。拉布仔细看：四个脚趾、中间深、边缘浅。"是背着东西走过去的人。"他顺着脚印找到小兔家，小兔正抱着一筐萝卜——萝卜从花圃边一路滚过去的。小兔主动认了错，第二天还帮花匠补种了花苗。肯承认错误的孩子，值得被温柔对待。'},
+  {e:'📦',c:'侦探',t:'拉布拉多警长·会响的快递箱',hot:1,txt:'警局门口放着一个箱子，"咚咚"一直响。大家都怕是危险的东西，拉布却不慌：他戴上手套，轻轻打开——里面是只迷路的小奶猫，饿得直叫。拉布给它喂了牛奶，又贴出寻猫启事，傍晚猫妈妈就找来了。遇到不知道的东西，先别急着害怕，慢慢看清楚。'},
+  {e:'🍯',c:'侦探',t:'拉布拉多警长·谁偷吃了蜂蜜',hot:1,txt:'熊大叔的蜂蜜少了一半，急得直跺脚。拉布检查蜂蜜罐：罐口沾着细细的毛，地上是一串很小的爪印。原来是浣熊小弟，他边吃边把爪子上的蜜抹在了树上。拉布让他用"帮忙搬木头"来还蜂蜜钱。做错事不可怕，肯承担就好。'},
+  {e:'🎈',c:'侦探',t:'拉布拉多警长·飞走的气球',hot:1,txt:'集市上，小刺猬的气球飞走了，哭得很伤心。拉布抬头看了看风向，跑到下风口的高坡上等着——气球果然飘了过来。小刺猬惊喜地问："您怎么知道的？"拉布说："风会把东西送到同一个方向。"动脑筋，比干着急有用得多。'},
+  {e:'🦖',c:'恐龙',t:'小恐龙找妈妈',hot:1,txt:'小恐龙蛋蛋睡醒，发现妈妈不见了。他沿着巨大的脚印往前走，遇到翼龙、遇到三角龙，大家都说"往火山那边去了"。蛋蛋有点怕，还是握紧小拳头一步一步走。火山脚下，妈妈正急着找他，一把把他抱起来："妈妈一直在等你。"害怕的时候，也可以勇敢地多走一步。'},
+  {e:'🥚',c:'恐龙',t:'会发光的恐龙蛋',hot:1,txt:'夜里，恐龙谷的一颗蛋发出蓝蓝的光。小恐龙们围着它，又好奇又紧张。老乌龟说："这是雷龙蛋，打雷的时候才会亮。"半夜真的下起了雷雨，蛋壳裂开，一只小雷龙钻出来，尾巴一甩，尾巴尖也闪起蓝光。每个人都有自己特别的地方。'},
+  {e:'🌋',c:'恐龙',t:'恐龙消防队',hot:1,txt:'火山口冒出火星，草丛着火了。恐龙消防队立刻出动：长颈龙伸长脖子当水塔，剑龙用背板挡住火苗，小恐龙们排成队传水桶。火灭了，大家才发现——自己的本领，正好都用得上。一个人干不成的事，一群人就能干成。'},
+  {e:'🦸',c:'超能',t:'小小超级英雄',hot:1,txt:'小满披上披风就想当英雄，可是"救人"总帮倒忙，扶老奶奶反而撞翻了菜篮。他难过地蹲在路边，忽然看见小猫被困在树上。这次他先找来梯子，又叫来大人一起帮忙，小猫安全下来了。真正的英雄不是力气最大，而是想办法、肯帮忙。'},
+  {e:'⚡',c:'超能',t:'闪电小队长',hot:1,txt:'闪电小队长跑得飞快，一分钟能绕操场十圈。可接力赛时他跑太急，把接力棒甩飞了，队伍输了。教练说："跑得快不是全部，稳才重要。"第二次比赛，他放慢脚步、稳稳交棒，队伍赢了。快是本领，稳才是智慧。'},
+  {e:'🤖',c:'超能',t:'机器人小豆丁',hot:1,txt:'小豆丁是个家务机器人，什么都会干，就是不会笑。小主人天天教它："先弯弯眼睛，再往上提嘴角。"一个月后，小豆丁学会了笑，还学会在小主人难过时拍拍他的肩。会关心别人，比什么都会干更珍贵。'},
+  {e:'🐶',c:'救援',t:'汪汪救援队·雨天的屋顶',hot:1,txt:'大雨下了一整夜，小猫一家被困在屋顶上。救援队马上出动：皮皮狗开船、小松鼠扔绳梯、大象用长鼻子把小猫一个个接下来。轮到最小的猫宝宝，它吓得不敢动，皮皮狗爬上去，让它趴在自己背上。勇敢不是不害怕，是害怕也去帮忙。'},
+  {e:'🚜',c:'救援',t:'挖掘机救援队',hot:1,txt:'山上的小路塌了，小动物们下不了山。挖掘机阿力想去修路，可石头太大，他推不动。他叫来推土机、吊车、翻斗车，一块石头一块石头地搬，天黑前路终于通了。一个人推不动的，一群人能推开。'},
+  {e:'🚒',c:'救援',t:'消防小狗阿旺',hot:1,txt:'阿旺是只胆小的小狗，一听到警报就发抖。可当仓库真的起火、仓鼠宝宝还在里面时，阿旺冲进去用湿毛巾捂住鼻子，把仓鼠叼了出来。大家夸他勇敢，他说："我还是很怕，但我更怕他出不来。"勇敢，是心里怕着，行动却没停。'},
+  {e:'🚀',c:'太空',t:'太空小狗',hot:1,txt:'小狗豆丁被选为第一只太空狗，坐着火箭飞向月球。它有点想家，就在舱里写下"地球最美"。回程时往窗外一看：蓝色的地球像一颗大水珠，它激动得尾巴直摇。看过很远的地方，才更懂得自己家有多好。'},
+  {e:'🛸',c:'太空',t:'迷路的外星小飞船',hot:1,txt:'一艘小飞船掉进了玉米地，里面的小外星人不敢出来。农场的小女孩给它送面包和水，比划着说"我帮你修"。修好那天，小外星人送她一颗会发光的小星星石头。对陌生的朋友友善一点，世界会变得更大。'}
 ];
+/* 新故事排前面：孩子一打开先看到侦探/恐龙，每日轮换也从这些开始 */
+STORY_BOOK.sort(function(a,b){ return (b.hot?1:0) - (a.hot?1:0); });
 function trainStreakCount() {   /* 真正“开完小火车”的连续天数（不再被口算/英语等任意收入续上） */
   var ts = state.extra.trainStreak;
   return (ts && ts.count) || 0;
@@ -1066,7 +1087,9 @@ function renderRoutine() {
 function storyToday() {   /* 今天的故事（当天有效；旧版「主题种子」数据自动升级为书库索引） */
   var sp = state.extra.story;
   if (sp && sp.date === todayStr() && typeof sp.idx === 'number') return sp;
-  var idx = Math.floor(Date.now()/86400000) % STORY_BOOK.length;   /* 按日期轮换，每天不重样 */
+  /* 按日期轮换：2026-11-13 作为第 1 篇起点，之后每天顺延一篇，40 天一轮不重样 */
+  var STORY_EPOCH = Math.floor(new Date(2026,10,13).getTime()/86400000);
+  var idx = (Math.floor(Date.now()/86400000) - STORY_EPOCH + STORY_BOOK.length*10) % STORY_BOOK.length;
   sp = (sp && sp.date === todayStr())
     ? {date: sp.date, idx: idx, paidRead: !!sp.paidRead, paidListen: !!sp.paidListen}   /* 兼容旧数据：保留今天已领的钱 */
     : {date: todayStr(), idx: idx, paidRead: false, paidListen: false};
@@ -1104,16 +1127,26 @@ function storyPay(kind) {   /* 故事朗读计费：孩子读 ¥3（每天一次
   sndCoin();
   toast(kind === 'read' ? ('📖 「'+b.t+'」读得真好 +¥'+pay+'！明晚翻开新的一篇') : ('🌙 「'+b.t+'」听完 +¥'+pay+'，做个好梦'));
 }
+var shelfCat = '全部';
 function renderShelf() {
   var sp = storyToday();
-  var html = '';
+  /* 分类筛选（按书库出现顺序生成） */
+  var cats = ['全部'], seen = {};
+  for (var ci=0;ci<STORY_BOOK.length;ci++) { var cc = STORY_BOOK[ci].c; if (!seen[cc]) { seen[cc]=1; cats.push(cc); } }
+  var chips = '';
+  for (var ct=0;ct<cats.length;ct++) chips += '<span class="chip'+(cats[ct]===shelfCat ? ' sel' : '')+'" onclick="shelfCat_(\''+cats[ct]+'\')">'+cats[ct]+'</span>';
+  document.getElementById('shelfCats').innerHTML = chips;
+  var html = '', n = 0;
   for (var i=0;i<STORY_BOOK.length;i++) {
     var b = STORY_BOOK[i];
-    html += '<button class="shelf-item'+(i===sp.idx ? ' open' : '')+'" onclick="shelfPick('+i+')"><span>'+b.e+'</span><span class="sn">'+esc(b.t)+'</span><span class="sc">'+esc(b.c)+(i===sp.idx ? ' ✅' : '')+'</span></button>';
+    if (shelfCat !== '全部' && b.c !== shelfCat) continue;
+    n++;
+    html += '<button class="shelf-item'+(i===sp.idx ? ' open' : '')+'" onclick="shelfPick('+i+')"><span>'+b.e+'</span><span class="sn">'+esc(b.t)+(b.hot ? ' 🔥' : '')+'</span><span class="sc">'+esc(b.c)+(i===sp.idx ? ' ✅' : '')+'</span></button>';
   }
   document.getElementById('shelfList').innerHTML = html;
-  document.getElementById('shelfCur').textContent = '今天翻开的是：「'+STORY_BOOK[sp.idx].t+'」——从书架换哪篇，今晚就读哪篇领钱';
+  document.getElementById('shelfCur').textContent = '今天翻开的是「'+STORY_BOOK[sp.idx].t+'」· 当前分类 '+n+'/'+STORY_BOOK.length+' 篇 · 换哪篇今晚就读哪篇领钱';
 }
+function shelfCat_(c) { shelfCat = c; renderShelf(); }
 function shelfPick(i) {   /* 从书架换今天的故事（当天领钱次数不受影响） */
   var sp = storyToday();
   if (sp.idx !== i) { sp.idx = i; save(); sndOk(); }
