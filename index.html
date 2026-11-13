@@ -586,7 +586,7 @@
       <div class="sub">每天点一下 +1 颗（最多 3 颗）；小火车开完全程、完成任务、口算全对会自动加星 ✨</div>
       <div class="w-stars" id="wStars"></div>
       <div class="stat-bar" style="margin-top:12px" id="wStarTotal"></div>
-      <div class="sub" style="margin-top:12px">🏪 <b>星星商店</b>——攒够就能换，换完会扣星星（每周重算）</div>
+      <div class="sub" style="margin-top:12px">🏪 <b>星星商店</b>——攒够就能换，换完会扣星星。每周最多约 21 颗、周日清零，<b>够了就换，别攒过期</b> 🍬</div>
       <div id="starShop"></div>
       <div id="starPending"></div>
     </div>
@@ -1310,7 +1310,7 @@ var ACH = [
   {id:'train_7',    e:'🚅', t:'高铁司机',     d:'小火车连续 7 天开到终点'},
   {id:'train_14',   e:'🚀', t:'火箭机长',     d:'小火车连续 14 天开到终点'},
   {id:'save_100',   e:'💰', t:'小金库 ¥100',  d:'存钱罐攒到 100 元'},
-  {id:'save_500',   e:'🐷', t:'半个 Switch',  d:'存钱罐攒到 500 元'},
+  {id:'save_500',   e:'🐷', t:'存钱小能手',   d:'存钱罐攒到 500 元'},
   {id:'save_1000',  e:'🏃', t:'半程 ¥1000',   d:'存钱罐攒到 1000 元（走了一半）'},
   {id:'save_3000',  e:'🎮', t:'Switch 2 到手', d:'存钱罐攒到 3000 元'},
   {id:'char_10',    e:'🔤', t:'识字 10 个',   d:'熟字城住进 10 个字'},
@@ -2600,7 +2600,11 @@ var WISH_LIST = [
   {id:'movie', e:'🎬', t:'家庭电影夜（自己选片）'},
   {id:'park',  e:'🏞️', t:'公园野餐一次'},
   {id:'story', e:'📖', t:'睡前多讲 3 个故事'},
-  {id:'bake',  e:'🧁', t:'和爸妈一起做点心'}
+  {id:'bake',  e:'🧁', t:'和爸妈一起做点心'},
+  {id:'craft', e:'🎨', t:'一起画画 / 手工一小时'},
+  {id:'bike',  e:'🚲', t:'骑车或轮滑去公园'},
+  {id:'board', e:'🎲', t:'家庭桌游夜（自己选游戏）'},
+  {id:'eat',   e:'🍜', t:'自己选一家店吃饭'}
 ];
 function wishName(id) {
   for (var i=0;i<WISH_LIST.length;i++) if (WISH_LIST[i].id===id) return WISH_LIST[i].e+' '+WISH_LIST[i].t;
@@ -2640,9 +2644,12 @@ function claimWeeklyWish() {
 }
 /* ===== 星星商店（星星能换东西） ===== */
 var STAR_SHOP = [
-  {cost:5,  e:'📺', t:'多 15 分钟 Switch 时间'},
-  {cost:8,  e:'🍦', t:'一次零食 / 甜品自选'},
-  {cost:12, e:'🎡', t:'周末出去玩半天（自己定去哪）'}
+  {cost:4,  e:'📺', t:'多看 15 分钟动画（iPad / 电视）'},
+  {cost:6,  e:'🍦', t:'一次零食 / 甜品自选'},
+  {cost:8,  e:'🎮', t:'多玩 20 分钟 iPad 游戏'},
+  {cost:10, e:'🕘', t:'今晚晚睡 20 分钟'},
+  {cost:12, e:'🎡', t:'周末出去玩半天（自己定去哪）'},
+  {cost:15, e:'🎁', t:'神秘小礼物（¥20 以内自己挑）'}
 ];
 function weekStars() {
   var w = state.week, n = 0;
