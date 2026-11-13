@@ -412,7 +412,7 @@
     </div>
     <div class="card">
       <h2>📖 睡前故事书</h2>
-      <div class="sub">40 篇故事全文就在卡片里（侦探 · 恐龙 · 超能 · 救援 · 太空 · 寓言 · 成语 · 童话），每天自动翻开新的一篇，读完领钱——孩子读 +¥3 或 爸妈读 +¥1，每天二选一</div>
+      <div class="sub">40 篇故事全文就在卡片里（侦探 · 恐龙 · 超能 · 救援 · 太空 · 寓言 · 成语 · 童话），每天自动翻开新的一篇——每天可以读/听两个：孩子读 +¥3 · 爸妈读 +¥1（各一次，换篇去书架）</div>
       <div id="storyBox"></div>
       <button class="btn btn-blue" style="margin-top:10px" onclick="openShelf()">📚 打开故事书架 · 全部 40 篇随便挑</button>
     </div>
@@ -533,7 +533,7 @@
       <div class="score-line" id="wkScore"></div>
       <div class="score-detail" id="wkDetail"></div>
       <div class="pk-line" id="wkPK"></div>
-      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ 口算 ¥0.5~4（越快越多，10 以内限时 2 分钟 / 20 以内 3 分钟）+ 认字 ¥0.5/字（每天前 10 个）· 写满 10 遍认证 ¥0.5/字（写字日封顶 ¥10）+ 小火车 ¥2 + 故事孩子读 ¥3 或 爸妈读 ¥1（每天二选一），<b>每天封顶 ¥40</b>；英语闯关 ¥5~6/关（每天 2 关）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
+      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ 口算 ¥0.5~4（越快越多，10 以内限时 2 分钟 / 20 以内 3 分钟）+ 认字 ¥0.5/字（每天前 10 个）· 写满 10 遍认证 ¥0.5/字（写字日封顶 ¥10）+ 小火车 ¥2 + 故事每天两个（孩子读 ¥3 · 爸妈读 ¥1，各一次），<b>每天封顶 ¥40</b>；英语闯关 ¥5~6/关（每天 2 关）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
     </div>
     <div class="card">
       <h2>🎯 这周我想认识这 5 个字</h2>
@@ -1110,19 +1110,17 @@ function renderStoryBox() {
     + '<div class="story-head"><span class="se">'+b.e+'</span><span class="st">'+esc(b.t)+'</span><span class="story-cat">'+esc(b.c)+'</span></div>'
     + '<div class="story-text">'+esc(b.txt)+'</div>'
     + '<div class="story-actions">'
-    + '<button class="story-btn '+(sp.paidRead ? 'done' : (sp.paidListen ? 'done' : 'read'))+'" onclick="storyPay(\'read\')"><span>📖 孩子读，爸妈听</span><small>'+(sp.paidRead ? '✓ 今天已领 ¥3' : (sp.paidListen ? '二选一 · 已选「爸妈读」' : '+¥3'))+'</small></button>'
-    + '<button class="story-btn '+(sp.paidListen ? 'done' : (sp.paidRead ? 'done' : 'listen'))+'" onclick="storyPay(\'listen\')"><span>🌙 爸妈读，孩子听</span><small>'+(sp.paidListen ? '✓ 今天已领 ¥1' : (sp.paidRead ? '二选一 · 已选「孩子读」' : '+¥1'))+'</small></button>'
+    + '<button class="story-btn '+(sp.paidRead ? 'done' : 'read')+'" onclick="storyPay(\'read\')"><span>📖 孩子读，爸妈听</span><small>'+(sp.paidRead ? '✓ 今天已领 ¥3' : '+¥3')+'</small></button>'
+    + '<button class="story-btn '+(sp.paidListen ? 'done' : 'listen')+'" onclick="storyPay(\'listen\')"><span>🌙 爸妈读，孩子听</span><small>'+(sp.paidListen ? '✓ 今天已领 ¥1' : '+¥1')+'</small></button>'
     + '</div>'
-    + '<div class="story-note">两种方式每天二选一 · 读完点按钮领钱 · 想换一篇去 📚 书架挑</div>'
+    + '<div class="story-note">每天可以读/听两个故事：孩子读一次 +¥3 · 爸妈读一次 +¥1 · 换篇去 📚 书架挑</div>'
     + '</div>';
 }
-function storyPay(kind) {   /* 故事朗读计费：孩子读 ¥3 / 爸妈读 ¥1，每天二选一 */
+function storyPay(kind) {   /* 故事朗读计费：孩子读 ¥3 · 爸妈读 ¥1，各每天一次（每天最多两个故事） */
   var sp = storyToday();
   var b = STORY_BOOK[sp.idx];
-  if (sp.paidRead || sp.paidListen) {
-    toast('今天已经选了「'+(sp.paidRead ? '孩子读' : '爸妈读')+'」，两种方式二选一 ✅ 明晚可以换另一种');
-    return;
-  }
+  if (kind === 'read' && sp.paidRead) { toast('今天「孩子读」的钱已经领过啦 ✅ 明晚翻开新的一篇再来'); return; }
+  if (kind === 'listen' && sp.paidListen) { toast('今天「爸妈读」的钱已经领过啦 ✅ 明晚再来'); return; }
   var amt = kind === 'read' ? 3 : 1;
   var pay = Math.min(amt, kidRemaining());
   if (pay === 0) { sndOk(); toast('今日工资已满 ¥'+KID_CAP+'，故事照读，这场算加演 💪'); return; }
@@ -1130,8 +1128,9 @@ function storyPay(kind) {   /* 故事朗读计费：孩子读 ¥3 / 爸妈读 ¥
   if (kind === 'read') sp.paidRead = true; else sp.paidListen = true;
   save();
   renderStoryBox(); renderWage(); renderHero();
+  var left = (!sp.paidRead || !sp.paidListen) ? ' 今天还能'+(sp.paidRead ? '听爸妈读一篇 +¥1' : '自己读一篇 +¥3')+'哦' : '';
   sndCoin();
-  toast(kind === 'read' ? ('📖 「'+b.t+'」读得真好 +¥'+pay+'！明晚翻开新的一篇') : ('🌙 「'+b.t+'」听完 +¥'+pay+'，做个好梦'));
+  toast(kind === 'read' ? ('📖 「'+b.t+'」读得真好 +¥'+pay+'！'+left) : ('🌙 「'+b.t+'」听完 +¥'+pay+'！'+left));
 }
 var shelfCat = '全部';
 function renderShelf() {
