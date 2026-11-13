@@ -389,7 +389,7 @@
     </div>
     <div class="card">
       <h2>🎲 今晚故事盲盒</h2>
-      <div class="sub">睡前故事环节用：摇一个主题，爸妈照着开场句往下编，让孩子加角色和转折 😄</div>
+      <div class="sub">睡前故事环节：摇一个主题照着往下编，讲完领钱——孩子读给爸妈听 +¥3 · 爸妈读给孩子听 +¥1（各每天一次）</div>
       <div id="storyBox"></div>
       <button class="btn btn-green" onclick="tellStory()">🎲 摇一个今晚的故事</button>
     </div>
@@ -510,7 +510,7 @@
       <div class="score-line" id="wkScore"></div>
       <div class="score-detail" id="wkDetail"></div>
       <div class="pk-line" id="wkPK"></div>
-      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ 口算 ¥1~4 + 认字 ¥0.5/字（每天前 10 个）· 写满 10 遍认证 ¥0.5/字（写字日封顶 ¥10）+ 小火车 ¥2，<b>每天封顶 ¥40</b>；英语闯关 ¥5~6/关（每天 2 关）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
+      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ 口算 ¥0.5~4（越快越多，10 以内限时 2 分钟 / 20 以内 3 分钟）+ 认字 ¥0.5/字（每天前 10 个）· 写满 10 遍认证 ¥0.5/字（写字日封顶 ¥10）+ 小火车 ¥2 + 故事孩子读 ¥3/爸妈读 ¥1（各每天一次），<b>每天封顶 ¥40</b>；英语闯关 ¥5~6/关（每天 2 关）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
     </div>
     <div class="card">
       <h2>🎯 这周我想认识这 5 个字</h2>
@@ -1009,18 +1009,50 @@ function renderRoutine() {
   renderPet();
   renderAch();
 }
+var storyPick = null;
+function storyToday() {   /* 今晚摇到的故事种子（当天有效，刷新/重开不丢） */
+  return (state.extra.story && state.extra.story.date === todayStr()) ? state.extra.story : null;
+}
 function renderStoryBox() {
   var el = document.getElementById('storyBox');
   if (!el) return;
-  el.innerHTML = storyPick
-    ? '<div class="rate-box" style="border-color:#8e44ad; margin-bottom:10px"><div class="rate-t">'+storyPick[0]+'</div><div class="sub" style="margin:0">'+storyPick[1]+'<br><span style="color:#999">从这里编下去，让孩子加角色和转折 😄</span></div></div>'
-    : '<div class="empty-tip">点下面的按钮，摇一个今晚的故事主题 🎲</div>';
+  var sp = storyToday();
+  storyPick = sp ? [sp.t, sp.s] : null;
+  if (!sp) {
+    el.innerHTML = '<div class="empty-tip">点下面的按钮，摇一个今晚的故事主题 🎲<br><span style="font-size:12px;color:#98a6b5">摇出来的是「故事种子」：照着开场句往下编，让孩子加角色和转折</span></div>';
+    return;
+  }
+  el.innerHTML = '<div class="rate-box" style="border-color:#8e44ad; margin-bottom:10px"><div class="rate-t">'+esc(sp.t)+'</div>'
+    + '<div class="sub" style="margin:0">'+esc(sp.s)+'<br><span style="color:#999">照着这句往下编，让孩子加角色和转折 😄</span></div>'
+    + '<div style="margin-top:10px">'
+    + '<button class="btn btn-blue" style="margin:0 8px 6px 0" onclick="storyPay(\'read\')">'+(sp.paidRead ? '📖 孩子读，爸妈听 ✓ 已领 ¥3' : '📖 孩子读，爸妈听 +¥3')+'</button>'
+    + '<button class="btn btn-green" style="margin:0 0 6px" onclick="storyPay(\'listen\')">'+(sp.paidListen ? '🌙 爸妈读，孩子听 ✓ 已领 ¥1' : '🌙 爸妈读，孩子听 +¥1')+'</button>'
+    + '</div>'
+    + '<div class="sub" style="margin-top:4px;color:#98a6b5">各每天一次 · 计入今日工资封顶 · 读绘本、识字卡上的短句都算「孩子读」</div></div>';
 }
-var storyPick = null;
 function tellStory() {
-  storyPick = STORIES[Math.floor(Math.random()*STORIES.length)];
+  if (storyToday()) { renderStoryBox(); toast('今晚的主题已经摇好啦，就在上面 👆 想换明晚再来摇'); return; }
+  var st = STORIES[Math.floor(Math.random()*STORIES.length)];
+  state.extra.story = {date: todayStr(), t: st[0], s: st[1], paidRead: false, paidListen: false};
+  save();
   sndOk();
   renderStoryBox();
+  toast('🎲 今晚是「'+st[0]+'」！照着开场句讲下去，讲完记得点领钱按钮');
+}
+function storyPay(kind) {   /* 故事朗读计费：孩子读 ¥3（每天一次）· 爸妈读孩子听 ¥1（每天一次） */
+  var sp = storyToday();
+  if (!sp) { toast('先摇一个今晚的故事主题 🎲'); return; }
+  if (kind === 'read' && sp.paidRead) { toast('今天的「孩子读」已经领过啦 ✅ 明晚再来'); return; }
+  if (kind === 'listen' && sp.paidListen) { toast('今天的「爸妈读」已经领过啦 ✅ 明晚再来'); return; }
+  var amt = kind === 'read' ? 3 : 1;
+  var pay = Math.min(amt, kidRemaining());
+  if (pay === 0) { sndOk(); toast('今日工资已满 ¥'+KID_CAP+'，故事照讲，这场算加演 💪'); return; }
+  logScore('task', kind === 'read' ? '故事:孩子读' : '故事:爸妈读', pay);
+  if (kind === 'read') sp.paidRead = true; else sp.paidListen = true;
+  save();
+  renderStoryBox(); renderWage(); renderHero();
+  sndCoin();
+  toast(kind === 'read' ? '📖 孩子读故事 +¥'+pay+'！讲得越生动越棒' : '🌙 睡前听故事 +¥'+pay+'，安安静静听完哦');
 }
 function renderMood() {
   var el = document.getElementById('moodBox');
@@ -1565,7 +1597,10 @@ function renderEngPage() {
     for (var pc=0; pc<sc.s.length; pc++) totalRounds += sc.s[pc].items.length;
     var doneCount = 0;
     for (var pd=0; pd<engProgress.pat && pd<sc.s.length; pd++) doneCount += sc.s[pd].items.length;
-    if (engProgress.pat < sc.s.length) { ensureEngQuiz(sc.s[engProgress.pat]); doneCount += curEngQuiz.pos; }
+    if (engProgress.pat < sc.s.length) {
+      if (engProgress.asked) doneCount += sc.s[engProgress.pat].items.length;   /* 已答完，等互问 */
+      else { ensureEngQuiz(sc.s[engProgress.pat]); doneCount += curEngQuiz.pos; }
+    }
     var allDone = engProgress.pat >= sc.s.length;
     html += '<div class="card" style="border:2.5px solid #2980b9; background:#f7fbff; margin-bottom:14px"><h2>🎬 场景 '+(n+1)+'：「'+sc.t+'」'
       + (sc.lv===2 ? '<span style="font-size:12px;color:#e67e22">（进阶 ¥6）</span>' : '<span style="font-size:12px;color:#8a97a6">（基础 ¥5）</span>')
@@ -1585,6 +1620,10 @@ function renderEngPage() {
       html += '<div class="cat-title">📘 句型'+(CN[p]||p+1)+'（闯关 '+pat.items.length+' 词）</div>'
         + '<div class="eng-line"><span class="eng-who">🔵 问</span><span class="eng-txt" style="color:#2471a3">'+pat.q+'</span><span class="eng-spk" onclick="speakEng('+li0+')">🔊</span></div>'
         + '<div class="sub" style="margin:-4px 0 2px">✨ 先选对答案，再大声读出来——动过脑的钱才是自己的！</div>';
+      if (engProgress.asked) {   /* 词都答对了 → 亲子互问环节（必须完成才进下一句型） */
+        html += renderEngAskHtml(pat);
+        break;
+      }
       html += renderEngQuizHtml(pat, p);
       break;   /* 只展开当前句型，后续句型等闯关完成后再出 */
     }
@@ -1718,20 +1757,47 @@ function engReadDone() {
   curEngQuiz.pos++;
   curEngQuiz.phase = 'q';
   var sc = ENG_SCENES[curEngIdx];
-  if (curEngQuiz.pos >= curEngQuiz.list.length) {   /* 本句型闯关完成 → 下一句型 */
-    engProgress.pat++;
-    engProgress.round = 0;
-    state.eng.progress = {idx: curEngIdx, pat: engProgress.pat, round: 0};
+  if (curEngQuiz.pos >= curEngQuiz.list.length) {   /* 本句型答完 → 先亲子互问，再进下一句型 */
+    engProgress.asked = true;
+    state.eng.progress = {idx: curEngIdx, pat: engProgress.pat, round: 0, asked: true};
     save();
-    curEngQuiz = null;
     sndOk();
     renderEngPage();
-    if (sc && engProgress.pat < sc.s.length) speakEngText(sc.s[engProgress.pat].q);   /* 自动读下一句型的问句 */
+    var cp = sc && sc.s[engProgress.pat];
+    if (cp) speakEngText(engQFull(cp));   /* 自动示范「孩子要问的那句」 */
     return;
   }
   renderEngPage();
   var nq = curEngQuiz && curEngQuiz.list[curEngQuiz.pos];
   if (nq && nq.type === 'listen') speakEngText(nq.en);
+}
+function engQFull(pat) { return pat.q.replace('___', pat.items[0][0]); }   /* 把句型里的挖空填上示范词 */
+function renderEngAskHtml(pat) {   /* 亲子互问：孩子当小老师问一遍，爸妈问一遍孩子答 */
+  var li0 = curEngLines.length;
+  var qFull = engQFull(pat);
+  var sample = pat.a.replace('___', pat.items[0][0]);
+  curEngLines.push(qFull); curEngLines.push(sample);
+  return '<div class="rate-box" style="border-color:#8e44ad; margin:10px 0">'
+    + '<div class="rate-t">🎤 你当小老师，互相问一遍！</div>'
+    + '<div class="sub" style="margin:0 0 8px">① 你大声问爸妈：<b style="color:#2471a3">'+esc(qFull)+'</b>'
+    + ' <span class="eng-spk" style="position:static;display:inline-block" onclick="speakEng('+li0+')">🔊</span><br>'
+    + '② 爸妈用这句回答你（他们故意说错你就纠正 😄）：<b style="color:#1e8449">'+esc(sample)+'</b>'
+    + ' <span class="eng-spk" style="position:static;display:inline-block" onclick="speakEng('+(li0+1)+')">🔊</span><br>'
+    + '③ 再换爸妈问你，你来答——都问完了点下面的按钮，才解锁下一句型</div>'
+    + '<button class="btn btn-green" onclick="engAskDone()">✔ 我们互相问完啦 →</button></div>';
+}
+function engAskDone() {   /* 互问完成 → 下一句型（最后一个句型问完 → 领奖金） */
+  if (!engProgress.asked) return;
+  engProgress.asked = false;
+  engProgress.pat++;
+  engProgress.round = 0;
+  state.eng.progress = {idx: curEngIdx, pat: engProgress.pat, round: 0, asked: false};
+  save();
+  curEngQuiz = null;
+  sndOk();
+  renderEngPage();
+  var sc = ENG_SCENES[curEngIdx];
+  if (sc && engProgress.pat < sc.s.length) speakEngText(engQFull(sc.s[engProgress.pat]));
 }
 function speakEngText(text, noCancel) {   /* 单句朗读；noCancel=true 时排队接在后面，不打断正在读的句子 */
   try {
@@ -2110,7 +2176,11 @@ function esc(s){ return String(s).replace(/[<>&"]/g, function(m){return {'<':'&l
 
 /* ================= 口算（自动出题挑战） ================= */
 var mqDiff = 10, mq = null;
-function mqLimit() { return mqDiff===20 ? 300 : 180; }   /* 限时：10以内 3 分钟 · 20以内 5 分钟 */
+function mqLimit() { return mqDiff===20 ? 180 : 120; }   /* 限时：10以内 2 分钟 · 20以内 3 分钟（超过不计钱） */
+function mqTierPay(secs) {   /* 2026-11-13 新规则：按用时分档，越快越多 */
+  if (mqDiff === 20) return secs <= 120 ? 2 : 1.5;   /* 20以内：2分钟内 ¥2 · 2~3分钟 ¥1.5 */
+  return secs <= 60 ? 1 : 0.5;                        /* 10以内：1分钟内 ¥1 · 1~2分钟 ¥0.5 */
+}
 function setMqDiff(el, n) {
   mqDiff = n;
   var ch = document.getElementById('mqChips').children;
@@ -2156,9 +2226,10 @@ function renderQuiz() {
   if (!el) return;
   if (!mq) {
     el.innerHTML = '<div class="mq-q">🔢</div>'
-      + '<div class="mq-prog">规则：每次 10 题 · 限时：10 以内 3 分钟 · 20 以内 5 分钟<br>'
-      + '💰 <b>10 以内</b>：完成 +¥1 · 全对 +¥2　｜　💰 <b>20 以内（进阶）</b>：完成 +¥2 · 全对 +¥4<br>'
-      + '超时只算练习不计钱 ⏱️ · 每天场次不限（受当日工资封顶）</div>'
+      + '<div class="mq-prog">规则：每次 10 题 · 限时：10 以内 2 分钟 · 20 以内 3 分钟，超时只算练习不计钱<br>'
+      + '💰 <b>10 以内</b>：1 分钟内 ¥1 · 1~2 分钟 ¥0.5 · 全对再 +¥1<br>'
+      + '💰 <b>20 以内（进阶）</b>：2 分钟内 ¥2 · 2~3 分钟 ¥1.5 · 全对再 +¥2<br>'
+      + '越快赚得越多 ⏱️ · 每天场次不限（受当日工资封顶）</div>'
       + '<button class="btn btn-green" onclick="startQuiz()">▶ 开始挑战（自动计时）</button>';
     return;
   }
@@ -2200,20 +2271,20 @@ function finishQuiz() {
   if (mqTimer) { clearInterval(mqTimer); mqTimer = null; }
   var secs = (Date.now()-mq.start)/1000;
   var limit = mqLimit();
-  var over = secs > limit;   /* 超时只算练习不计钱 */
-  var basePay = mqDiff===20 ? 2 : 1;                        /* 完成奖：进阶版 ¥2 */
-  var fullBonus = mq.right===10 ? (mqDiff===20 ? 2 : 1) : 0;/* 全对奖：10以内+¥1 · 20以内+¥2 */
-  var pay = over ? 0 : Math.min(basePay + fullBonus, kidRemaining());
-  mq.pay = pay;
+  var over = secs > limit;   /* 超时只算练习不计钱（含全对奖一起不发） */
+  var tierPay = over ? 0 : mqTierPay(secs);
+  var fullBonus = (!over && mq.right===10) ? (mqDiff===20 ? 2 : 1) : 0;   /* 全对奖：10以内+¥1 · 20以内+¥2 · 超时不发 */
+  var pay = Math.min(tierPay + fullBonus, kidRemaining());
+  mq.pay = pay; mq.secs = secs;
   state.math.unshift({d:todayStr(), n:10, r:mq.right, w:mq.wrong, s:secs, pay:pay});
   if (state.math.length > 30) state.math.length = 30;
   if (pay > 0) logScore('math', mqDiff===20 ? '口算20进阶' : '口算10以内', pay);
   addStar(1);
   save(); renderMath(); renderQuiz(); renderWage();
-  if (over) { sndOk(); toast('⏱️ 用了 '+Math.round(secs)+' 秒（限时 '+limit+' 秒）——这次算练习不计钱，再来一次一定更快！'); }
+  if (over) { sndOk(); toast('⏱️ 用了 '+Math.round(secs)+' 秒（超过 '+Math.round(limit/60)+' 分钟不计钱）——这次算练习，再来一次一定更快！'); }
   else if (pay === 0) { sndOk(); toast('📝 答对 '+mq.right+'/10！今日工资已满，这场算免费加练 💪'); }
-  else if (mq.right===10) { sndCoin(); toast('🏆 全对！'+mqDiff+' 以内口算赚了 ¥'+pay+'，太厉害了！'); }
-  else toast('📝 答对 '+mq.right+'/10，赚了 ¥'+pay+'，明天再战 💪');
+  else if (mq.right===10) { sndCoin(); toast('🏆 全对！用时 '+Math.round(secs)+' 秒，'+mqDiff+' 以内口算赚了 ¥'+pay+'，太厉害了！'); }
+  else toast('📝 答对 '+mq.right+'/10 · 用时 '+Math.round(secs)+' 秒 · 赚了 ¥'+pay+'，明天再战 💪');
 }
 function renderMath() {
   var t = todayStr();
@@ -2230,7 +2301,7 @@ function renderMath() {
     '<div class="mq-prog">'+(today.length
       ? '今日 '+today.length+' 场 · 赚 ¥'+tp+' · 全对 '+tfull+' 场'+(tbest!==null?' · 今日最快 '+tbest.toFixed(1)+' 秒':'')
       : '今天还没练，开始第一场吧 🔢')+'</div>'
-    + '<div class="mq-prog">⏱️ 限时：10 以内 3 分钟（¥1~2）· 20 以内 5 分钟（¥2~4）· 超时只算练习不计钱</div>';
+    + '<div class="mq-prog">⏱️ 10 以内限时 2 分钟（1 分钟内 ¥1 · 1~2 分钟 ¥0.5 · 全对 +¥1）· 20 以内限时 3 分钟（2 分钟内 ¥2 · 2~3 分钟 ¥1.5 · 全对 +¥2）</div>';
   /* 全对最好成绩（不限今天） */
   var best = null;
   for (var k2=0;k2<state.math.length;k2++) {
