@@ -111,6 +111,28 @@
   .cat-title { font-size:13.5px; font-weight:bold; color:#5a6b7d; margin:12px 2px 8px; }
   .rate-box { background:#fff; border:2.5px solid #5b8def; border-radius:14px; padding:12px; margin-top:12px; }
   .rate-t { font-size:14.5px; font-weight:bold; margin-bottom:6px; }
+  /* ---- 睡前故事书 ---- */
+  .story-card { background:linear-gradient(165deg,#fffdf3,#fff6df); border:2.5px solid #ecd9a4; border-radius:18px; padding:16px 16px 13px; box-shadow:0 4px 14px rgba(196,156,56,.14); }
+  .story-head { display:flex; align-items:center; gap:10px; margin-bottom:9px; }
+  .story-head .se { font-size:30px; flex:none; }
+  .story-head .st { font-size:19px; font-weight:bold; color:#5d4a1f; flex:1; min-width:0; }
+  .story-cat { font-size:11px; background:#f4e7bd; color:#8a6d1f; border-radius:999px; padding:4px 11px; flex:none; }
+  .story-text { font-family:Kaiti,'Kaiti SC',STKaiti,serif; font-size:16.5px; line-height:1.95; color:#4a3b15; background:#fffef8; border:1.5px dashed #e2cd92; border-radius:12px; padding:13px 15px; max-height:240px; overflow-y:auto; -webkit-overflow-scrolling:touch; text-align:justify; }
+  .story-actions { display:flex; gap:10px; margin-top:12px; }
+  .story-btn { flex:1; border:none; border-radius:14px; padding:12px 4px; font-size:14px; font-weight:bold; color:#fff; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; }
+  .story-btn small { font-size:11px; font-weight:normal; opacity:.92; }
+  .story-btn.read  { background:linear-gradient(135deg,#5b8def,#3f6fe0); }
+  .story-btn.listen{ background:linear-gradient(135deg,#3fb27f,#2e9e6a); }
+  .story-btn.done  { background:#d3dcea; color:#5f7089; }
+  .story-btn.done small { color:#8fa0b8; }
+  .story-note { font-size:11.5px; color:#b0954e; margin-top:9px; text-align:center; }
+  /* ---- 故事书架弹窗 ---- */
+  .shelf-list { display:grid; grid-template-columns:1fr 1fr; gap:8px; max-height:54vh; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:2px; }
+  .shelf-item { background:#fffdf3; border:2px solid #ecd9a4; border-radius:12px; padding:10px 10px; cursor:pointer; text-align:left; font-size:13.5px; color:#5d4a1f; font-weight:bold; display:flex; gap:7px; align-items:center; min-height:46px; }
+  .shelf-item .sn { flex:1; min-width:0; }
+  .shelf-item .sc { font-size:10px; color:#b0954e; font-weight:normal; flex:none; }
+  .shelf-item.open { border-color:#3fb27f; background:#f1faf5; }
+  .shelf-cur { font-size:12.5px; color:#8a6d1f; background:#fff6df; border-radius:10px; padding:9px 12px; margin-top:10px; }
   .plist { display:flex; flex-direction:column; gap:8px; }
   .pitem { display:flex; align-items:center; gap:8px; border:2px solid #d7e0ec; border-radius:12px; padding:10px 12px; cursor:pointer; background:#fbfdff; }
   .pitem.on { border-color:#5b8def; background:#eef4fd; }
@@ -388,10 +410,10 @@
       <div class="mq-prog" id="trainInfo" style="margin-top:8px"></div>
     </div>
     <div class="card">
-      <h2>🎲 今晚故事盲盒</h2>
-      <div class="sub">睡前故事环节：摇一个主题照着往下编，讲完领钱——孩子读给爸妈听 +¥3 · 爸妈读给孩子听 +¥1（各每天一次）</div>
+      <h2>📖 睡前故事书</h2>
+      <div class="sub">24 篇经典故事（寓言 · 成语 · 童话），每天自动翻开新的一篇，读完领钱——孩子读给爸妈听 +¥3 · 爸妈读给孩子听 +¥1（各每天一次）</div>
       <div id="storyBox"></div>
-      <button class="btn btn-green" onclick="tellStory()">🎲 摇一个今晚的故事</button>
+      <button class="btn btn-blue" style="margin-top:10px" onclick="openShelf()">📚 打开故事书架 · 24 篇随便挑</button>
     </div>
     <div class="card">
       <h2>😊 今天心情怎么样</h2>
@@ -625,6 +647,17 @@
     <button class="x" onclick="closeEngReview()">✕</button>
     <div id="engReviewBody"></div>
     <button class="btn btn-blue" onclick="speakEngAll()">🔊 连读一遍（问 + 全部句子）</button>
+  </div>
+</div>
+
+<!-- 故事书架弹窗 -->
+<div class="modal-mask" id="shelfMask" onclick="if(event.target===this)closeShelf()">
+  <div class="modal">
+    <button class="x" onclick="closeShelf()">✕</button>
+    <h2>📚 故事书架（24 篇经典）</h2>
+    <div class="shelf-list" id="shelfList"></div>
+    <div class="shelf-cur" id="shelfCur"></div>
+    <div class="sub" style="margin-top:8px">点一篇就换成今晚的故事。领钱规则不变：孩子读 +¥3 · 爸妈读 +¥1，各每天一次——换故事不会多领，老老实实读完才有钱 😄</div>
   </div>
 </div>
 
@@ -940,15 +973,35 @@ function switchTab(name, btn) {
 
 /* ================= 流程 ================= */
 var MOODS = [['😄','超开心'],['🙂','还不错'],['😐','一般般'],['😢','有点难过'],['😤','有点生气']];
-var STORIES = [
-  ['🚀 太空冒险','火箭点火出发！第一个星球上会遇到谁呢？'],
-  ['🦕 恐龙王国','一只小恐龙迷路了，它要穿过火山找妈妈……'],
-  ['🏰 公主与龙','城堡里传来“呼噜呼噜”的声音，是龙在睡觉……'],
-  ['🌊 海底探险','潜水艇慢慢下沉，灯光照亮了一条发光的鱼……'],
-  ['🚗 汽车总动员','小汽车今天第一次送快递，地图被风吹走了……'],
-  ['🌲 森林小屋','深夜，森林小屋的门被轻轻敲响了，是谁呢？'],
-  ['🪄 魔法学校','今天的魔法课教的是会飞的扫把，可是它不听话……'],
-  ['🐣 动物幼儿园','小鸡第一天上学，紧张得脸都红了……']
+/* ---- 睡前故事书库：24 篇经典（寓言/成语/童话），每天自动翻一篇，全文可读 ---- */
+var STORY_BOOK = [
+  /* 寓言 */
+  {e:'🐢',c:'寓言',t:'龟兔赛跑',txt:'兔子笑话乌龟爬得慢，乌龟说：比一比才知道。比赛开始，兔子一溜烟跑没影，回头一看乌龟还远远落在后面，就睡起了大觉。乌龟一步一步不停地爬，天快黑时超过了兔子。兔子醒来拼命追，可已经晚了——乌龟先到了终点。坚持往前走，比跑得快却不走更厉害。'},
+  {e:'🐦',c:'寓言',t:'乌鸦喝水',txt:'乌鸦口渴，找到一个瓶子，瓶口小、水又少，怎么也喝不着。它想啊想，叼来一颗颗小石子投进瓶里。水面一点点升高，乌鸦终于喝到了水。遇到难题别急着哭，动动脑筋，办法总比困难多。'},
+  {e:'🐺',c:'寓言',t:'狼来了',txt:'放羊娃在山上觉得无聊，冲山下大喊"狼来了！"农夫们扛着锄头跑上来，却发现被骗了。第二天他又骗了大家一次。第三天狼真的来了，他喊破喉咙也没人上山，羊全被狼叼走了。爱说谎的人，即使说了真话，也没人再相信。'},
+  {e:'🐑',c:'寓言',t:'狼和小羊',txt:'小羊在河边喝水，上游的狼找茬："你弄脏了我的水！"小羊说："我在下游，水是从您那边流过来的呀。"狼又说："你去年骂过我。"小羊说："我今年还没出生呢。"狼恼羞成怒："反正我要吃你！"对坏人说再多道理也没用，要学会保护自己。'},
+  {e:'🦊',c:'寓言',t:'狐狸和乌鸦',txt:'乌鸦叼着一块肉站在树枝上，狐狸馋得直流口水，拼命夸奖："乌鸦小姐，你的羽毛真漂亮，歌声一定更动听，唱一首吧！"乌鸦一得意，张嘴一唱——肉掉了下来，狐狸叼起肉就跑。爱听奉承话，容易上大当。'},
+  {e:'🐜',c:'寓言',t:'蚂蚁和蝉',txt:'夏天，蚂蚁忙着往家里搬粮食，蝉整天在树上唱歌，笑蚂蚁不懂得享受。冬天来了，蝉又冷又饿，跑去求蚂蚁分点吃的。蚂蚁问："夏天你怎么不存点粮食？"蝉说："我忙着唱歌呢。"蚂蚁说："那你冬天就去跳舞吧。"先苦后甜，偷懒欠下的账，冬天要还。'},
+  {e:'🌬️',c:'寓言',t:'北风和太阳',txt:'北风和太阳比谁的本领大：谁能先让路上的行人脱掉外套，谁就赢。北风呼呼猛吹，行人把外套越裹越紧；太阳暖洋洋一照，行人热得自己把外套脱了下来。温和比强硬更有力量。'},
+  {e:'🦁',c:'寓言',t:'狮子和老鼠',txt:'小老鼠吵醒了睡觉的狮子，狮子一把抓住它。老鼠急忙求饶："狮子大王，也许有一天我能帮上你！"狮子觉得好笑，还是放了它。后来狮子掉进猎人的大网，老鼠用尖尖的牙齿咬断绳网，救出了狮子。再小的人也可能帮上大忙，别小看任何人。'},
+  /* 成语 */
+  {e:'🌳',c:'成语',t:'守株待兔',txt:'农夫在田里干活，一只兔子飞奔过来撞在树桩上死了。他白捡了一只兔子，从此再也不种田，天天守在树桩旁边，等下一只兔子。兔子再也没来，田里却长满了荒草。天上掉下来的便宜靠不住，踏实干活才是真本事。'},
+  {e:'🧱',c:'成语',t:'亡羊补牢',txt:'牧羊人的羊圈破了个洞，夜里狼钻进来叼走一只羊。邻居劝他快修羊圈，他摆摆手："羊都丢了，还修什么。"第二天，又少了一只羊。他这才赶紧把洞补好，从此羊再也没丢过。出了错不可怕，可怕的是不肯改——现在补救还来得及。'},
+  {e:'🐍',c:'成语',t:'画蛇添足',txt:'几个人分一壶酒，约定在地上画蛇，谁先画完谁喝。一个人最先画完，看别人还没画好，得意地想："我还能给蛇添上几只脚！"他正添着，别人画完了，夺过酒壶说："蛇本来没有脚，你画的根本不是蛇！"酒被他喝掉了。多余的动作，反而会把好事弄砸。'},
+  {e:'🔔',c:'成语',t:'掩耳盗铃',txt:'小偷看中了一口大钟，太重背不动，就想砸碎了再搬。锤子一敲，"当——"响声震天。他怕别人听见，灵机一动：捂住自己的耳朵去砸！他自己听不见了，别人照样听得清清楚楚，很快就被抓住了。自己骗自己，是骗不过去的。'},
+  {e:'🌱',c:'成语',t:'拔苗助长',txt:'宋国的农夫嫌禾苗长得太慢，想出个"好办法"：把每一棵苗都往上拔高一截。他累得满头大汗，回家得意地炫耀："今天我帮苗长高了！"儿子跑到田里一看，禾苗全枯死了。做事情要给它时间慢慢来，急着"帮忙"反而帮了倒忙。'},
+  {e:'🚣',c:'成语',t:'刻舟求剑',txt:'楚国人坐船过江，一不小心，剑"扑通"掉进水里。他不慌不忙，在船帮上刻了个记号："剑就是从这儿掉下去的。"船靠了岸，他从刻记号的地方跳下水找剑，怎么也找不到。船在走，剑可没走——情况变了，办法也要跟着变。'},
+  {e:'🛡️',c:'成语',t:'自相矛盾',txt:'集市上，卖兵器的人举起长矛吆喝："我的矛最锋利，什么盾都刺得穿！"又举起盾牌喊："我的盾最坚固，什么矛都刺不破！"有人问："拿你的矛刺你的盾，会怎么样？"他张口结舌，一句话也答不上来。说话做事前后要一致，不然自己就先站不住脚。'},
+  {e:'🐸',c:'成语',t:'井底之蛙',txt:'井里的青蛙对来访的海龟夸口："你看，天空只有井口那么大，我全都看遍啦！"海龟说："海比几千口井加起来还大，旱涝都淹不着它。"青蛙跳出井口，才发现天大得没有边。见识太少的人，容易把一小块当成整个世界——多读书、多出门，眼界才会宽。'},
+  /* 童话 */
+  {e:'🐷',c:'童话',t:'三只小猪',txt:'三只小猪各自盖房子：老大图省事，盖了草屋；老二快点完工，盖了木屋；老三认认真真，一块一块烧砖砌了砖屋。大灰狼来了，一口气吹倒草屋，一头撞塌木屋，两只小猪逃进砖屋。狼怎么吹怎么撞都不动，想从烟囱爬进去，掉进了灶台的热水里。偷懒省下的功夫，迟早要加倍还。'},
+  {e:'👧',c:'童话',t:'小红帽',txt:'小红帽去看生病的外婆，路上遇到大灰狼，把外婆家的地址一五一十说了。狼抄近路先到，把外婆吞下肚，扮成外婆躺在床上。小红帽觉得奇怪："外婆，你的耳朵怎么这么大？""为了听清你说话呀。""嘴巴怎么这么大？""为的是一口吃掉你呀！"猎人及时赶到，救出了小红帽和外婆。不要把家里的事随便告诉陌生人。'},
+  {e:'🦢',c:'童话',t:'丑小鸭',txt:'丑小鸭一出生就又大又灰，跟兄弟姐妹都不一样，大家啄它、笑它，它伤心地离家流浪，独自熬过了寒冷的冬天。春天来了，湖面上游来美丽的白天鹅，丑小鸭低头照水——水里那只漂亮的白天鹅，就是它自己！原来它本来就是天鹅蛋孵出来的。和别人不一样没关系，长大自有属于你的漂亮。'},
+  {e:'🌷',c:'童话',t:'拇指姑娘',txt:'小姑娘只有拇指那么大，睡在核桃壳做的床上。她被癞蛤蟆抢走当儿媳妇，被金龟子嫌弃，冬天差点冻死在雪地里——可她还是善良的，救活了一只冻僵的燕子。春天，燕子带她飞到温暖的花之国，她在每朵花里遇见了花王子，从此过上了幸福的生活。再小的人也有大幸福，善良会带你飞。'},
+  {e:'👠',c:'童话',t:'灰姑娘',txt:'继母和两个姐姐把所有家务都丢给灰姑娘，还不许她去王子的舞会。魔法仙女出现了，把南瓜变成马车、老鼠变成骏马，送她一双水晶鞋——可是午夜十二点，魔法会全部消失。灰姑娘慌忙跑走，掉了一只鞋。王子拿着鞋找遍全城，终于找到了她。善良的人，好运不会一直缺席。'},
+  {e:'❄️',c:'童话',t:'白雪公主',txt:'王后从魔镜那里听说白雪公主比自己美，气得派猎人害她，后来又扮成老婆婆，用毒苹果把她害得昏睡过去。七个小矮人一直保护着她。王子路过，用真爱唤醒了公主，恶毒的王后再也神气不起来。善良和真心，比魔镜说的"最漂亮"重要得多。'},
+  {e:'👑',c:'童话',t:'青蛙王子',txt:'公主的小金球掉进了井里，青蛙说："让我陪你吃饭、一起玩，我就帮你捡。"公主满口答应，捡回金球却跑掉了。国王知道后说："答应别人的事，就一定要做到。"公主只好依约请青蛙吃饭。第二天青蛙变成了一位王子——他被巫婆施了魔法，只有真诚守约才能解除。诚信能创造奇迹。'},
+  {e:'🌱',c:'童话',t:'杰克和魔豆',txt:'杰克用家里唯一的牛，换了三颗"魔豆"，妈妈气得把豆子扔出窗外。一夜之间，豆藤长上了云端！杰克顺着豆藤爬上去，在巨人的城堡里发现会下金蛋的母鸡。趁巨人熟睡，他抱着母鸡溜下来，砍断追来的豆藤。从此他和妈妈再也不愁吃穿。勇敢加上动脑筋，穷日子也能开出金花。'}
 ];
 function trainStreakCount() {   /* 真正“开完小火车”的连续天数（不再被口算/英语等任意收入续上） */
   var ts = state.extra.trainStreak;
@@ -1009,51 +1062,66 @@ function renderRoutine() {
   renderPet();
   renderAch();
 }
-var storyPick = null;
-function storyToday() {   /* 今晚摇到的故事种子（当天有效，刷新/重开不丢） */
-  return (state.extra.story && state.extra.story.date === todayStr()) ? state.extra.story : null;
+/* ---- 睡前故事书：每天自动翻一篇，书架可换，读完领钱 ---- */
+function storyToday() {   /* 今天的故事（当天有效；旧版「主题种子」数据自动升级为书库索引） */
+  var sp = state.extra.story;
+  if (sp && sp.date === todayStr() && typeof sp.idx === 'number') return sp;
+  var idx = Math.floor(Date.now()/86400000) % STORY_BOOK.length;   /* 按日期轮换，每天不重样 */
+  sp = (sp && sp.date === todayStr())
+    ? {date: sp.date, idx: idx, paidRead: !!sp.paidRead, paidListen: !!sp.paidListen}   /* 兼容旧数据：保留今天已领的钱 */
+    : {date: todayStr(), idx: idx, paidRead: false, paidListen: false};
+  state.extra.story = sp;
+  save();
+  return sp;
 }
 function renderStoryBox() {
   var el = document.getElementById('storyBox');
   if (!el) return;
   var sp = storyToday();
-  storyPick = sp ? [sp.t, sp.s] : null;
-  if (!sp) {
-    el.innerHTML = '<div class="empty-tip">点下面的按钮，摇一个今晚的故事主题 🎲<br><span style="font-size:12px;color:#98a6b5">摇出来的是「故事种子」：照着开场句往下编，让孩子加角色和转折</span></div>';
-    return;
-  }
-  el.innerHTML = '<div class="rate-box" style="border-color:#8e44ad; margin-bottom:10px"><div class="rate-t">'+esc(sp.t)+'</div>'
-    + '<div class="sub" style="margin:0">'+esc(sp.s)+'<br><span style="color:#999">照着这句往下编，让孩子加角色和转折 😄</span></div>'
-    + '<div style="margin-top:10px">'
-    + '<button class="btn btn-blue" style="margin:0 8px 6px 0" onclick="storyPay(\'read\')">'+(sp.paidRead ? '📖 孩子读，爸妈听 ✓ 已领 ¥3' : '📖 孩子读，爸妈听 +¥3')+'</button>'
-    + '<button class="btn btn-green" style="margin:0 0 6px" onclick="storyPay(\'listen\')">'+(sp.paidListen ? '🌙 爸妈读，孩子听 ✓ 已领 ¥1' : '🌙 爸妈读，孩子听 +¥1')+'</button>'
+  var b = STORY_BOOK[sp.idx];
+  el.innerHTML = '<div class="story-card">'
+    + '<div class="story-head"><span class="se">'+b.e+'</span><span class="st">'+esc(b.t)+'</span><span class="story-cat">'+esc(b.c)+'</span></div>'
+    + '<div class="story-text">'+esc(b.txt)+'</div>'
+    + '<div class="story-actions">'
+    + '<button class="story-btn '+(sp.paidRead ? 'done' : 'read')+'" onclick="storyPay(\'read\')"><span>📖 孩子读，爸妈听</span><small>'+(sp.paidRead ? '✓ 今天已领 ¥3' : '+¥3 · 每天一次')+'</small></button>'
+    + '<button class="story-btn '+(sp.paidListen ? 'done' : 'listen')+'" onclick="storyPay(\'listen\')"><span>🌙 爸妈读，孩子听</span><small>'+(sp.paidListen ? '✓ 今天已领 ¥1' : '+¥1 · 每天一次')+'</small></button>'
     + '</div>'
-    + '<div class="sub" style="margin-top:4px;color:#98a6b5">各每天一次 · 计入今日工资封顶 · 读绘本、识字卡上的短句都算「孩子读」</div></div>';
-}
-function tellStory() {
-  if (storyToday()) { renderStoryBox(); toast('今晚的主题已经摇好啦，就在上面 👆 想换明晚再来摇'); return; }
-  var st = STORIES[Math.floor(Math.random()*STORIES.length)];
-  state.extra.story = {date: todayStr(), t: st[0], s: st[1], paidRead: false, paidListen: false};
-  save();
-  sndOk();
-  renderStoryBox();
-  toast('🎲 今晚是「'+st[0]+'」！照着开场句讲下去，讲完记得点领钱按钮');
+    + '<div class="story-note">读完点按钮领钱（计入今日工资封顶）· 想换一篇去 📚 书架挑</div>'
+    + '</div>';
 }
 function storyPay(kind) {   /* 故事朗读计费：孩子读 ¥3（每天一次）· 爸妈读孩子听 ¥1（每天一次） */
   var sp = storyToday();
-  if (!sp) { toast('先摇一个今晚的故事主题 🎲'); return; }
-  if (kind === 'read' && sp.paidRead) { toast('今天的「孩子读」已经领过啦 ✅ 明晚再来'); return; }
-  if (kind === 'listen' && sp.paidListen) { toast('今天的「爸妈读」已经领过啦 ✅ 明晚再来'); return; }
+  var b = STORY_BOOK[sp.idx];
+  if (kind === 'read' && sp.paidRead) { toast('今天「孩子读」的钱已经领过啦 ✅ 明晚换个新故事再来'); return; }
+  if (kind === 'listen' && sp.paidListen) { toast('今天「爸妈读」的钱已经领过啦 ✅ 明晚再来'); return; }
   var amt = kind === 'read' ? 3 : 1;
   var pay = Math.min(amt, kidRemaining());
-  if (pay === 0) { sndOk(); toast('今日工资已满 ¥'+KID_CAP+'，故事照讲，这场算加演 💪'); return; }
+  if (pay === 0) { sndOk(); toast('今日工资已满 ¥'+KID_CAP+'，故事照读，这场算加演 💪'); return; }
   logScore('task', kind === 'read' ? '故事:孩子读' : '故事:爸妈读', pay);
   if (kind === 'read') sp.paidRead = true; else sp.paidListen = true;
   save();
   renderStoryBox(); renderWage(); renderHero();
   sndCoin();
-  toast(kind === 'read' ? '📖 孩子读故事 +¥'+pay+'！讲得越生动越棒' : '🌙 睡前听故事 +¥'+pay+'，安安静静听完哦');
+  toast(kind === 'read' ? ('📖 「'+b.t+'」读得真好 +¥'+pay+'！明晚翻开新的一篇') : ('🌙 「'+b.t+'」听完 +¥'+pay+'，做个好梦'));
 }
+function renderShelf() {
+  var sp = storyToday();
+  var html = '';
+  for (var i=0;i<STORY_BOOK.length;i++) {
+    var b = STORY_BOOK[i];
+    html += '<button class="shelf-item'+(i===sp.idx ? ' open' : '')+'" onclick="shelfPick('+i+')"><span>'+b.e+'</span><span class="sn">'+esc(b.t)+'</span><span class="sc">'+esc(b.c)+(i===sp.idx ? ' ✅' : '')+'</span></button>';
+  }
+  document.getElementById('shelfList').innerHTML = html;
+  document.getElementById('shelfCur').textContent = '今天翻开的是：「'+STORY_BOOK[sp.idx].t+'」——从书架换哪篇，今晚就读哪篇领钱';
+}
+function shelfPick(i) {   /* 从书架换今天的故事（当天领钱次数不受影响） */
+  var sp = storyToday();
+  if (sp.idx !== i) { sp.idx = i; save(); sndOk(); }
+  renderShelf(); renderStoryBox();
+  toast('📖 今晚就读「'+STORY_BOOK[i].t+'」');
+}
+function openShelf(){ document.getElementById('shelfMask').classList.add('show'); renderShelf(); }
+function closeShelf(){ document.getElementById('shelfMask').classList.remove('show'); }
 function renderMood() {
   var el = document.getElementById('moodBox');
   if (!el) return;
