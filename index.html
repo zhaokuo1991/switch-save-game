@@ -185,6 +185,19 @@
   .sticker .s-e { font-size:26px; line-height:1.2; }
   .sticker .s-n { font-size:10.5px; color:#8a97a6; line-height:1.35; max-width:100%; overflow:hidden; }
   .sticker.off { opacity:.35; filter:grayscale(1); }
+  /* 稀有度：稀有金边 · 传说紫光 */
+  .sticker.r2 { border-color:#f2c86a; background:linear-gradient(165deg,#fffdf3,#fff3d6); }
+  .sticker.r2 .s-n { color:#a5771a; font-weight:bold; }
+  .sticker.r3 { border-color:#b07be8; background:linear-gradient(165deg,#fdf6ff,#efe0ff); animation:legendGlow 2.2s ease-in-out infinite; }
+  .sticker.r3 .s-n { color:#8a3fd0; font-weight:bold; }
+  .stk-badge { position:absolute; top:2px; right:2px; font-size:9px; border-radius:6px; padding:1px 4px; color:#fff; background:#f2c86a; }
+  .sticker.r3 .stk-badge { background:#b07be8; }
+  @keyframes legendGlow { 0%,100%{box-shadow:0 0 0 2px rgba(176,123,232,.12),0 0 8px rgba(176,123,232,.2)} 50%{box-shadow:0 0 0 3px rgba(176,123,232,.28),0 0 16px rgba(176,123,232,.5)} }
+  .stk-top { grid-column:1/-1; }
+  .stk-bar { height:10px; border-radius:999px; background:#eaf0f8; overflow:hidden; }
+  .stk-bar i { display:block; height:100%; border-radius:999px; background:linear-gradient(90deg,#5b8def,#7c6cf0,#b07be8); transition:width .4s; }
+  .stk-num { font-size:12.5px; color:#31445c; margin-top:6px; }
+  .stk-tip { font-size:11px; color:#98a6b5; margin-top:3px; }
   .sticker.sel { border:3px solid #5b8def; background:#eef4fd; box-shadow:0 0 0 3px rgba(91,141,239,.15); }
   .st-sel { position:absolute; top:2px; left:2px; font-size:10px; background:#5b8def; color:#fff; border-radius:6px; padding:1px 4px; font-weight:bold; }
   .st-rev { position:absolute; top:2px; right:2px; font-size:11px; background:#eef4fd; border-radius:6px; padding:1px 4px; }
@@ -443,7 +456,7 @@
     </div>
     <div class="card">
       <h2>🏷️ 我的贴纸册</h2>
-      <div class="sub">每完成一项任务，随机掉落一只小动物贴纸 —— 集齐 12 种！</div>
+      <div class="sub">每完成一项任务随机掉一张贴纸：普通 10 种 · <b style="color:#a5771a">稀有 6 种（金边）</b> · <b style="color:#8a3fd0">传说 4 种（紫光）</b>，共 20 种。保底：每 8 张必出稀有、每 20 张必出传说，集齐就是传说级收藏家！</div>
       <div class="sticker-grid" id="stickerArea"></div>
     </div>
     <div class="card" style="padding:10px 14px">
@@ -808,7 +821,54 @@ var LEVELS = [
   {min:250, e:'💎', t:'钻石王中王'}
 ];
 var CNY_DATE = '2027-02-06';   /* 春节，存钱截止日 */
-var STICKERS = ['🦕','🦖','🦄','🐙','🦋','🐢','🐬','🦉','🐝','🐨','🦊','🐳'];
+/* 贴纸册：20 种（普通 10 / 稀有 6 / 传说 4），r=1 常见 · r=2 稀有 · r=3 传说（掉率最低） */
+var STICKERS = [
+  /* —— 普通 —— */
+  {e:'🦕', n:'小恐龙',   r:1}, {e:'🐢', n:'慢乌龟',   r:1}, {e:'🐝', n:'小蜜蜂',   r:1},
+  {e:'🐸', n:'跳跳蛙',   r:1}, {e:'🐹', n:'仓鼠球',   r:1}, {e:'🐧', n:'企鹅绅士', r:1},
+  {e:'🐨', n:'考拉宝宝', r:1}, {e:'🦊', n:'小狐狸',   r:1}, {e:'🐬', n:'海豚',     r:1},
+  {e:'🐑', n:'小绵羊',   r:1},
+  /* —— 稀有 —— */
+  {e:'🦄', n:'独角兽',   r:2}, {e:'🦋', n:'蝴蝶仙子', r:2}, {e:'🦉', n:'猫头鹰博士', r:2},
+  {e:'🐙', n:'章鱼船长', r:2}, {e:'🐳', n:'大鲸鱼',   r:2}, {e:'🦁', n:'狮子王',   r:2},
+  /* —— 传说 —— */
+  {e:'🦖', n:'霸王龙',   r:3}, {e:'🐉', n:'神龙',     r:3}, {e:'🦚', n:'孔雀公主', r:3},
+  {e:'🦅', n:'天空之王', r:3}
+];
+var STICKER_POOL = null;
+function stickerPool() {   /* 加权抽奖池：普通多、稀有中、传说极少 */
+  if (STICKER_POOL) return STICKER_POOL;
+  var w = {1:6, 2:2, 3:1};
+  STICKER_POOL = [];
+  for (var i=0;i<STICKERS.length;i++) {
+    for (var k=0;k<w[STICKERS[i].r];k++) STICKER_POOL.push(STICKERS[i]);
+  }
+  return STICKER_POOL;
+}
+function stickerFind(e) {
+  for (var i=0;i<STICKERS.length;i++) if (STICKERS[i].e===e) return STICKERS[i];
+  return null;
+}
+function dropSticker() {   /* 掉一张贴纸，返回 {e,n,r,isNew,count}；带保底：每 8 张必稀有 · 每 20 张必传说 */
+  if (!state.extra.stickers) state.extra.stickers = {};
+  var total = (state.extra.stkTotal || 0) + 1;
+  state.extra.stkTotal = total;
+  var pick;
+  if (total % 20 === 0) {        /* 保底：传说必出 */
+    var lp = STICKERS.filter(function(x){ return x.r === 3; });
+    pick = lp[Math.floor(Math.random()*lp.length)];
+  } else if (total % 8 === 0) {  /* 保底：稀有及以上 */
+    var rp = STICKERS.filter(function(x){ return x.r >= 2; });
+    pick = rp[Math.floor(Math.random()*rp.length)];
+  } else {
+    var pool = stickerPool();
+    pick = pool[Math.floor(Math.random()*pool.length)];
+  }
+  var s = state.extra.stickers;
+  var isNew = !(s[pick.e] > 0);
+  s[pick.e] = (s[pick.e] || 0) + 1;
+  return {e:pick.e, n:pick.n, r:pick.r, isNew:isNew, count:s[pick.e], guaranteed:(total%20===0||total%8===0)};
+}
 var PRAISES = ['太厉害啦！','大脑又长大了一圈！','这个进步看得见！','全家都为你鼓掌！','今天的你超闪亮！'];
 var GIFT_MSGS = ['打开一看——金币雨！','哇，是装满星星的宝箱！','里面蹦出一只送分小恐龙！','是彩虹糖罐子，甜甜的金币！'];
 function levelIdx(total) {
@@ -1225,7 +1285,8 @@ var ACH = [
   {id:'char_30',    e:'📚', t:'识字 30 个',   d:'熟字城住进 30 个字'},
   {id:'char_50',    e:'🎓', t:'识字 50 个',   d:'熟字城住进 50 个字'},
   {id:'sticker_6',  e:'🏷️', t:'贴纸 6 种',    d:'贴纸册收集 6 种小动物'},
-  {id:'sticker_12', e:'🐾', t:'贴纸全家福',   d:'贴纸册 12 种全部集齐'},
+  {id:'sticker_16', e:'🌟', t:'收藏家',       d:'贴纸册收集 16 种'},
+  {id:'sticker_20', e:'🐾', t:'贴纸全家福',   d:'贴纸册 20 种全部集齐'},
   {id:'eng_5',      e:'🗣️', t:'英语 5 场',    d:'英语场景累计演满 5 个'},
   {id:'parent_3',   e:'👨‍💻', t:'榜样家长',     d:'家长打卡累计 3 次'}
 ];
@@ -1255,7 +1316,7 @@ function achConds() {
     train_3: streak>=3, train_7: streak>=7, train_14: streak>=14,
     save_100: total>=100, save_500: total>=500, save_1000: total>=1000,
     char_10: masteredChars()>=10, char_30: masteredChars()>=30, char_50: masteredChars()>=50,
-    sticker_6: stickerKinds()>=6, sticker_12: stickerKinds()>=12,
+    sticker_6: stickerKinds()>=6, sticker_16: stickerKinds()>=16, sticker_20: stickerKinds()>=20,
     eng_5: achCount('eng')>=5, parent_3: achCount('parent')>=3
   };
 }
@@ -1497,19 +1558,21 @@ function finishTask() {
   if (pay > 0) { logScore('task', task.t, pay); }
   var trainPay = tickRoutineStep('小任务');
   addStar(1);
-  /* 随机掉落贴纸 */
-  var st = STICKERS[Math.floor(Math.random()*STICKERS.length)];
-  state.extra.stickers[st] = (state.extra.stickers[st]||0)+1;
+  /* 随机掉落贴纸（普通 / 稀有 / 传说） */
+  var drop = dropSticker();
+  var stTxt = drop.isNew ? ('✨ 新贴纸「'+drop.n+'」'+(drop.r===3?'（传说！）':'')+' 收入贴纸册！') : ('贴纸 '+drop.e+' ×'+drop.count);
   /* 25% 概率出现神秘礼物 ¥1~3 */
   var gotGift = Math.random() < 0.25;
   if (gotGift) state.tasks.gift = 1 + Math.floor(Math.random()*3);
   var praise = PRAISES[Math.floor(Math.random()*PRAISES.length)];
   curTask = null; ratingTier = 0;
   save(); renderTask();
-  if (pay === 0) { sndOk(); toast('⭐ 今日工资已领满 ¥'+KID_CAP+'！这轮送贴纸和星星，钱明天再赚 💪'); }
-  else if (pay < pts) { sndCoin(); toast('🎉 「'+task.t+'」第 '+roundNo+' 轮 +¥'+pay+'，今日工资刚好领满 ¥'+KID_CAP+'！掉落贴纸 '+st); }
-  else { sndCoin(); toast('🎉 「'+task.t+'」第 '+roundNo+' 轮 +¥'+pts+'（今日累计 ¥'+totalPts+'），'+praise+' 掉落贴纸 '+st); }
-  if (gotGift) setTimeout(function(){ toast('🎁 咦？任务页出现了一个神秘礼物…快去点开！'); }, 2400);
+  if (pay === 0) { sndOk(); toast('⭐ 今日工资已领满 ¥'+KID_CAP+'！这轮送贴纸和星星，钱明天再赚 💪  '+stTxt); }
+  else if (pay < pts) { sndCoin(); toast('🎉 「'+task.t+'」第 '+roundNo+' 轮 +¥'+pay+'，今日工资刚好领满 ¥'+KID_CAP+'！  '+stTxt); }
+  else { sndCoin(); toast('🎉 「'+task.t+'」第 '+roundNo+' 轮 +¥'+pts+'（今日累计 ¥'+totalPts+'），'+praise+'  '+stTxt); }
+  if (drop.r === 3) setTimeout(function(){ showCele(drop.e, '传说贴纸！'+drop.n, '超稀有 · 只有 1/66 的机会，贴纸册里会发光 ✨'); }, 1600);
+  else if (drop.isNew) setTimeout(function(){ toast('✨ 新贴纸「'+drop.n+'」再收集 '+(STICKERS.length - stickerKinds())+' 种就集齐啦！'); }, 1600);
+  if (gotGift) setTimeout(function(){ toast('🎁 咦？任务页出现了一个神秘礼物…快去点开！'); }, 2600);
   if (trainPay > 0) setTimeout(function(){ toast('🚂 小火车也开到终点啦！额外 +¥'+trainPay+' ⭐'); }, 4800);
 }
 function openGift() {
@@ -1526,14 +1589,21 @@ function openGift() {
 function renderStickers() {
   var el = document.getElementById('stickerArea');
   if (!el) return;
-  var kinds = 0, html = '';
+  if (!state.extra.stickers) state.extra.stickers = {};
+  var s = state.extra.stickers, kinds = 0, rare = 0, legend = 0, html = '';
   for (var i=0;i<STICKERS.length;i++) {
-    var n = state.extra.stickers[STICKERS[i]]||0;
-    if (n>0) kinds++;
-    html += '<div class="sticker'+(n?'':' off')+'"><div class="s-e">'+(n?STICKERS[i]:'❓')+'</div>'
-      + '<div class="s-n">'+(n ? (n>1 ? STICKERS[i]+'×'+n : '有了 ✓') : '未获得')+'</div></div>';
+    var b = STICKERS[i], n = s[b.e]||0;
+    if (n>0) { kinds++; if (b.r===2) rare++; if (b.r===3) legend++; }
+    html += '<div class="sticker'+(n ? ' r'+b.r : ' off')+'"><div class="s-e">'+(n ? b.e : '❓')+'</div>'
+      + '<div class="s-n">'+(n ? (esc(b.n)+(n>1 ? ' ×'+n : '')) : '未获得')+'</div>'
+      + (b.r>1 && n ? '<span class="stk-badge">'+(b.r===3?'传说':'稀有')+'</span>' : '')+'</div>';
   }
-  el.innerHTML = '<div style="grid-column:1/-1; font-size:12px; color:#8a97a6">已收集 '+kinds+' / 12 种'+(kinds>=12?' 🎉 全集齐啦，太厉害了！':'')+'</div>' + html;
+  var pct = Math.round(kinds / STICKERS.length * 100);
+  el.innerHTML = '<div class="stk-top">'
+    + '<div class="stk-bar"><i style="width:'+pct+'%"></i></div>'
+    + '<div class="stk-num">已收集 <b>'+kinds+' / '+STICKERS.length+'</b> 种 · 稀有 '+rare+' · 传说 '+legend
+    + (kinds>=STICKERS.length ? ' 🎉 全部集齐，你是传说级收藏家！' : '')+'</div>'
+    + '<div class="stk-tip">保底规则：每 8 张必出稀有 · 每 20 张必出传说 🎁</div></div>' + html;
 }
 
 /* ================= 家长打卡 ================= */
