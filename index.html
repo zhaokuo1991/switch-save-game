@@ -466,7 +466,7 @@
     <div class="card">
       <div id="heroBar"></div>
       <div id="wageBar" style="margin-bottom:10px"></div>
-      <h2>✏️ 我的赚钱任务（12 项，点卡片开始）</h2>
+      <h2>✏️ 我的赚钱任务（14 项，点卡片开始）</h2>
       <div class="sub">做完选评价入账。<b>做了几轮就叠几轮</b>：跳绳跳了 3 分钟 = 领 3 轮！每项每天最多 5 轮 · 每日工资（任务/口算/识字等）封顶 ¥40，<b>英语专项奖金独立另计</b> 🐷 带「⭐今日推荐」的每轮多赚 ¥1</div>
       <div id="taskArea"></div>
     </div>
@@ -488,6 +488,12 @@
 
   <!-- ============ 识字墙 ============ -->
   <section id="tab-wall" class="tab">
+    <div class="card">
+      <h2>📗 语文练习册（纸质 · 线下写）</h2>
+      <div class="sub">写字在<b>纸上写</b>：可乐写、爸妈验收，写完当天页数回来点「领工资」；认字成果在下面识字墙搬家登记（¥0.5/字）。页数和单价爸妈可改 👇</div>
+      <div id="cnWorkArea"></div>
+      <div id="photoCn"></div>
+    </div>
     <div class="stat-bar" id="wallStat"></div>
     <div class="card">
       <h2>➕ 添加新字</h2>
@@ -516,20 +522,26 @@
   <!-- ============ 口算 ============ -->
   <section id="tab-math" class="tab">
     <div class="card">
-      <h2>🔢 口算挑战（自动出题）</h2>
-      <div class="sub">10 道题连闯，点答案就行，自动计时自动发钱。不用买练习册啦～</div>
+      <h2>📐 数学练习册（纸质 · 线下写）</h2>
+      <div class="sub">数学在<b>纸上写</b>：可乐写、爸妈验收，写完当天页数回来点「领工资」——线下学习、线上记账。页数和单价爸妈可改 👇</div>
+      <div id="workArea"></div>
+      <div id="photoMath"></div>
+    </div>
+    <div class="card">
+      <h2>🎮 口算游戏场（学累了玩两把，越快赚越多）</h2>
       <div class="chips" id="mqChips">
         <span class="chip sel" onclick="setMqDiff(this,10)">10 以内</span>
         <span class="chip" onclick="setMqDiff(this,20)">20 以内进阶</span>
       </div>
       <div id="mqArea"></div>
+      <div id="revengeBox"></div>
     </div>
     <div class="card">
-      <h2>📅 今日汇总</h2>
+      <h2>📅 今日数学汇总</h2>
       <div id="mqToday"></div>
     </div>
     <div class="card">
-      <h2>🏆 最好成绩 · 📋 历史记录（最近 30 场）</h2>
+      <h2>🏆 全对最好成绩 · 📋 数学记录（练习册 + 口算游戏）</h2>
       <div class="best" id="tmBest" style="margin-bottom:10px"></div>
       <div id="tmList"></div>
     </div>
@@ -565,7 +577,7 @@
       <div class="score-line" id="wkScore"></div>
       <div class="score-detail" id="wkDetail"></div>
       <div class="pk-line" id="wkPK"></div>
-      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ 口算 ¥0.5~4（越快越多，10 以内限时 2 分钟 / 20 以内 3 分钟）+ 认字 ¥0.5/字（每天前 10 个）· 写满 10 遍认证 ¥0.5/字（写字日封顶 ¥10）+ 小火车 ¥2 + 故事每天两个（孩子读 ¥3 · 爸妈读 ¥1，各一次），<b>每天封顶 ¥40</b>；英语闯关 ¥5~6/关（每天 2 关）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
+      <div class="sub" style="margin-top:8px">孩子：任务每轮 ¥1~5（每项每天最多 5 轮）+ <b>数学练习册 ¥4/天（5 页纸质）· 语文练习册 ¥4/天（5 页纸质）</b> + 口算游戏 ¥0.5~4（越快越多）+ 认字 ¥0.5/字（每天前 10 个）· 写满 10 遍认证 ¥0.5/字（写字日封顶 ¥10）+ 小火车 ¥2 + 故事每天两个（孩子读 ¥3 · 爸妈读 ¥1，各一次），<b>每天封顶 ¥40</b>；英语闯关 ¥5~6/关（每天 2 关）为<b>专项奖金，不占封顶</b>；家长打卡不封顶 —— 全家的钱进同一个存钱罐 🐷</div>
     </div>
     <div class="card">
       <h2>🎯 这周我想认识这 5 个字</h2>
@@ -602,8 +614,8 @@
 <nav>
   <button class="active" data-tab="routine" onclick="switchTab('routine',this)"><span class="n-e">🚂</span>流程</button>
   <button data-tab="task" onclick="switchTab('task',this)"><span class="n-e">✏️</span>任务</button>
-  <button data-tab="wall" onclick="switchTab('wall',this)"><span class="n-e">🏰</span>识字墙</button>
-  <button data-tab="math" onclick="switchTab('math',this)"><span class="n-e">🔢</span>口算</button>
+  <button data-tab="wall" onclick="switchTab('wall',this)"><span class="n-e">📖</span>语文</button>
+  <button data-tab="math" onclick="switchTab('math',this)"><span class="n-e">🔢</span>数学</button>
   <button data-tab="eng" onclick="switchTab('eng',this)"><span class="n-e">🗣️</span>英语</button>
   <button data-tab="week" onclick="switchTab('week',this)"><span class="n-e">🐷</span>存钱罐</button>
 </nav>
@@ -726,6 +738,17 @@
 <!-- 每日彩蛋浮钮 -->
 <div class="egg-float" id="eggFloat" style="display:none" onclick="eggFound()">🥚</div>
 
+<!-- 练习册拍照存档 -->
+<input type="file" id="photoFile" accept="image/*" capture="environment" style="display:none" onchange="onPhotoFile(this)">
+<div class="modal-mask" id="photoMask" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal" style="text-align:center">
+    <button class="x" onclick="document.getElementById('photoMask').classList.remove('show')">✕</button>
+    <img id="photoViewImg" style="width:100%;border-radius:12px">
+    <div class="sub" id="photoViewCap" style="margin:6px 0 0"></div>
+    <button class="btn btn-gray" onclick="delPhoto()">🗑 删除这张照片</button>
+  </div>
+</div>
+
 <!-- 升级庆祝全屏动画 -->
 <div class="celebrate" id="celebrate" onclick="this.classList.remove('show')">
   <div class="c-box"><div class="c-e" id="celE"></div><div class="c-t" id="celT"></div><div class="c-s" id="celS"></div></div>
@@ -745,7 +768,7 @@ function stepsForToday(k) {
   s.push({e:'🍚', t:'晚餐', p:'好好吃饭 聊聊天'});
   s.push({e:'🏃', t:'放电 5 分钟', p:'先动再静 专注加倍'});
   if (k!=='sun') s.push({e:'🎧', t:'线上英语课', p:'大声跟读 30 分钟'});
-  s.push({e:'✏️', t:'我的小任务', p:'12 项里挑 1~2 项'});
+  s.push({e:'✏️', t:'我的小任务', p:'14 项里挑 1~2 项'});
   s.push({e:'🎲', t:'好玩时间', p:'全身心 20 分钟'});
   s.push({e:'🧺', t:'收拾小天地', p:'玩具回家 书归位'});
   s.push({e:'🪥', t:'洗漱', p:'刷牙洗脸 自己来'});
@@ -769,7 +792,7 @@ function freshRoutine() {
   for (var i=0;i<n;i++) done.push(false);
   return {date: todayStr(), done: done, paid: false};   /* paid：满程奖励今天是否已发（每天只发一次） */
 }
-/* 12 项任务：学习 6 + 运动 3 + 生活 3，c=类别，base=基础报酬（元） */
+/* 14 项任务：学习 3 + 运动 5 + 生活 6，c=类别，base=基础报酬（元）。数学/语文主线走作业页练习册，这里不放重复项 */
 /* 2026-11-13 调整：删掉与专项模块重复的「口算一页/描红写字/讲个小故事」（那些在各自栏目里单独领钱），
    原地换成跳格子/呼啦圈/脏衣分类，并追加独立洗漱、独立上厕所——下标不变，历史记录不受影响 */
 var TASKS = [
@@ -791,7 +814,7 @@ var TASKS = [
 var CATS = {study:'📚 学习类 ¥2 起', sport:'🏃 运动类 ¥2 起', life:'🌱 生活类 ¥1 起'};
 var MAX_ROUNDS = 5;   /* 每项任务每天最多结算几轮（想放宽就改这个数） */
 var KID_CAP = 40;     /* 每日工资封顶（元）：任务+小火车+口算+识字+礼物计入；英语专项奖金与家长打卡不占额度。想调就改这里 */
-var CAP_CATS = {task:1, train:1, math:1, wall:1, gift:1};
+var CAP_CATS = {task:1, train:1, math:1, chinese:1, wall:1, gift:1};
 /* ---- 识字奖励规则（2026-11-13 改版）----
    认字：¥0.5/字，每个字一生一次，每天最多 10 个（¥5 封顶）
    写字：写满 10 遍才算学会，¥0.5/字，每个字一生一次，每天封顶 ¥10（=20 个字）
@@ -933,6 +956,7 @@ function defState() {
     scores: [],                             /* 得分流水：{d, cat, label, pts} */
     extra: {total:0, swGoal:3000, streak:{count:0,last:''}, stickers:{}},  /* 已存金额/我的目标(Switch 2 ¥3000)/连续天数/贴纸 */
     chars: [],
+    work: {date: '', mathDone:false, cnDone:false, mathPages:5, cnPages:5, mathPay:4, cnPay:4, log:[], _pay:{}},
     math: [],
     week: blankWeek()
   };
@@ -1059,8 +1083,8 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   if (name==='routine') renderRoutine();
   if (name==='task') renderTask();
-  if (name==='wall') renderWall();
-  if (name==='math') { renderMath(); renderQuiz(); }
+  if (name=="math") { renderWork(); renderMath(); renderQuiz(); renderPhotos(); renderRevenge(); }
+  if (name=="wall") { renderWork(); renderWall(); renderPhotos(); }
   if (name==='eng') renderEngPage();
   if (name==='week') renderWeek();
   renderEgg();
@@ -2114,7 +2138,8 @@ function restartToday() {   /* 重新开始今天：当日打卡/任务/英语/�
   state.week.stars[todayKey()] = 0;
   save();
   curTask = null; ratingTier = 0; mq = null;
-  renderRoutine(); renderTask(); renderWall(); renderMath(); renderQuiz(); renderEngPage(); renderWeek();
+  if (state.work && state.work.date === t) { state.work.mathDone = false; state.work.cnDone = false; state.work.readDone = false; state.work._pay = {}; }
+  renderRoutine(); renderTask(); renderWall(); renderWork(); renderPhotos(); renderRevenge(); renderMath(); renderQuiz(); renderEngPage(); renderWeek();
   closeParent();
   toast('🔄 今天已重新开始，从晚餐出发 🚂');
 }
@@ -2184,7 +2209,7 @@ function renderDayEarn() {   /* 每日收入记录：最近 7 天，点任何一
   el.innerHTML = html;
 }
 function moneyMeta(cat) {
-  var M = {task:['✏️','任务'], train:['🚂','小火车'], math:['🔢','口算'], wall:['🏰','识字'], gift:['🎁','神秘礼物'], eng:['🗣️','英语场景'], parent:['👨‍💻','家长打卡']};
+  var M = {task:['✏️','任务'], train:['🚂','小火车'], math:['📐','数学(练习册+游戏)'], chinese:['📗','语文练习册'], wall:['🏰','识字'], gift:['🎁','神秘礼物'], eng:['🗣️','英语场景'], parent:['👨‍💻','家长打卡']};
   return M[cat] || ['💸','其他'];
 }
 function openMoney(day) {   /* 查看某天的收入明细（不传=今天） */
@@ -2262,9 +2287,12 @@ function renderWall() {
   for (var m=0;m<MILES.length;m++) { if (old < MILES[m]) { next = MILES[m]; break; } }
   var tip = old >= 60 ? '🏆 城堡大赢家！你就是识字小达人～'
     : '认识 '+next+' 个字 = ' + (next===10?'种下一棵小树 🌱':next===20?'开出一朵花 🌸':next===40?'升级识字小达人 🎖️':'城堡大赢家 🏆');
+  var wk2 = (state.work && state.work.date===todayStr()) ? state.work : null;
+  var cnSum = catToday('chinese') + catToday('wall');
   document.getElementById('wallStat').innerHTML =
     '⭐ 我已经认识 <b>'+old+'</b> 个字啦！&nbsp; ' + tip
-    + '<br>💰 今日识字收入 <b>¥'+catToday('wall')+'</b> <span style="font-size:11px;color:#98a6b5">（会认搬家 +¥0.5/字 · 每天前 10 个 · 写满 10 遍认证 +¥0.5/字 · 写字日封顶 ¥10 · 计入今日工资封顶）</span>';
+    + '<br>💰 今日语文收入 <b>¥'+(Math.round(cnSum*10)/10)+'</b>'
+    + '<span style="font-size:11px;color:#98a6b5">（练习册 '+(wk2&&wk2.cnDone?'✅¥'+((wk2._pay&&wk2._pay.cnPages)||0):'⬜待验收')+' · 认字搬家 +¥0.5/字（每天前 10 个）· 写满 10 遍认证 +¥0.5/字（写字日封顶 ¥10）· 计入今日工资封顶）</span>';
 }
 function addChar() {
   var zi = document.getElementById('inZi').value.trim();
@@ -2393,9 +2421,110 @@ function delChar() {
 }
 function esc(s){ return String(s).replace(/[<>&"]/g, function(m){return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[m];}); }
 
-/* ================= 口算（自动出题挑战） ================= */
+/* ================= 练习册作业（纸质线下写 → 线上登记领钱） ================= */
+function workDay() {   /* 今日练习册/朗读状态；页数/单价/记录跨天保留 */
+  if (!state.work) state.work = {date:'', mathDone:false, cnDone:false, readDone:false, mathPages:5, cnPages:5, mathPay:4, cnPay:4, log:[], _pay:{}, streak:{count:0, last:'', claimed:[]}};
+  if (state.work.date !== todayStr()) {
+    state.work.date = todayStr();
+    state.work.mathDone = false;
+    state.work.cnDone = false;
+    state.work.readDone = false;
+  }
+  if (!state.work.streak) state.work.streak = {count:0, last:'', claimed:[]};
+  if (!state.work._pay) state.work._pay = {};
+  return state.work;
+}
+function yesterdayStr(){ var d=new Date(); d.setDate(d.getDate()-1); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function workStreakLine() {   /* 全勤状态行：数学+语文页共用 */
+  var ws = workDay().streak;
+  return '<div class="mq-prog" style="margin-top:2px">🔥 作业连续全勤 <b>'+ws.count+'</b> 天<span style="font-size:11px;color:#98a6b5">（数学+语文当天都写完 = 1 天 · 连 3 天 +¥2 · 连 7 天 +¥5 · 每 14 天 +¥10）</span></div>';
+}
+function bumpWorkStreak() {   /* 两科都完成时调用；断签自动重计 */
+  var w = workDay();
+  if (!(w.mathDone && w.cnDone)) return;
+  var ws = w.streak;
+  if (ws.last === todayStr()) return;   /* 今天已记过 */
+  ws.count = (ws.last === yesterdayStr()) ? ws.count + 1 : 1;
+  ws.last = todayStr();
+  var bonus = 0, label = '';
+  if (ws.count === 3)      { bonus = 2;  label = '全勤 3 天'; }
+  else if (ws.count === 7) { bonus = 5;  label = '全勤 7 天'; }
+  else if (ws.count >= 14 && ws.count % 14 === 0) { bonus = 10; label = '全勤 '+ws.count+' 天'; }
+  if (bonus > 0 && ws.claimed.indexOf(ws.count) < 0) {
+    ws.claimed.push(ws.count);
+    var pay = Math.min(bonus, kidRemaining());
+    if (pay > 0) logScore('bonus', '🔥'+label, pay);
+    showCele('🔥', label+'！', '全勤奖金 +¥'+(pay>0?pay:0)+' 已入存钱罐，明天继续 🔥');
+  }
+}
+function setWorkCfg(k, v) {
+  var n = parseFloat(v);
+  if (isNaN(n) || n < 0) n = 0;
+  workDay()[k] = n;
+  save(); renderWork();
+}
+function renderWork() {   /* 练习册打卡：数学卡渲染到数学页(workArea)，语文卡渲染到语文页(cnWorkArea) */
+  var w = workDay();
+  if (!w._pay) w._pay = {};
+  function subCard(done, icon, title, pagesKey, payKey, hint) {
+    var pages = w[pagesKey], pay = w[payKey];
+    return '<div class="pitem'+(done?' on':'')+'" style="margin-bottom:8px; cursor:'+(done?'default':'pointer')+'"'+(done?'':' onclick="workDone(\''+pagesKey+'\')"')+'>'
+      + '<span class="pi-e" style="font-size:26px">'+icon+'</span>'
+      + '<span class="pi-t">'+title+'</span>'
+      + '<span class="pi-d">'+(done ? '今天 '+pages+' 页已验收' : hint)+'　<span style="color:#98a6b5">页数 <input type="number" value="'+pages+'" style="width:44px;border:1px solid #d7e0ec;border-radius:6px;padding:2px 4px;text-align:center;font-size:12px" onclick="event.stopPropagation()" oninput="setWorkCfg(\''+pagesKey+'\',this.value)"> 页 · 单价 <input type="number" value="'+pay+'" style="width:44px;border:1px solid #d7e0ec;border-radius:6px;padding:2px 4px;text-align:center;font-size:12px" onclick="event.stopPropagation()" oninput="setWorkCfg(\''+payKey+'\',this.value)"> 元</span></span>'
+      + '<span class="pi-s">'+(done ? '✅ +¥'+(w._pay[pagesKey]||0) : '写完领 +¥'+pay)+'</span></div>';
+  }
+  var mEl = document.getElementById('workArea');
+  if (mEl) mEl.innerHTML = subCard(w.mathDone, '📕', '数学练习册', 'mathPages', 'mathPay', '线下写完 '+w.mathPages+' 页，点这里领钱') + workStreakLine();
+  var cEl = document.getElementById('cnWorkArea');
+  if (cEl) cEl.innerHTML = subCard(w.cnDone, '📗', '语文写字练习册', 'cnPages', 'cnPay', '线下写完 '+w.cnPages+' 页，点这里领钱')
+    + '<div class="pitem'+(w.readDone?' on':'')+'" style="cursor:'+(w.readDone?'default':'pointer')+'"'+(w.readDone?'':' onclick="readDone()"')+'>'
+    + '<span class="pi-e" style="font-size:26px">📖</span>'
+    + '<span class="pi-t">今日朗读</span>'
+    + '<span class="pi-d">'+(w.readDone ? '今天已读 10 分钟 ✅' : '线下读课文 / 绘本 10 分钟，读完点这里')+'</span>'
+    + '<span class="pi-s">'+(w.readDone ? '✅ +¥'+(w._pay.read||0) : '读完 +¥3')+'</span></div>'
+    + workStreakLine();
+}
+function readDone() {   /* 今日朗读打卡：线下读 10 分钟，+¥1/天 */
+  var w = workDay();
+  if (w.readDone) return;
+  var pay = Math.min(3, kidRemaining());
+  w.readDone = true;
+  w._pay.read = pay;
+  if (pay > 0) logScore('chinese', '朗读10分钟', pay);
+  w.log.unshift({d:todayStr(), sub:'read', pages:'10 分钟', pts:pay});
+  if (w.log.length > 60) w.log.length = 60;
+  addStar(1);
+  tickRoutineStep('我的小任务');
+  save(); renderWork(); renderWage(); renderHero(); renderWall();
+  if (pay === 0) { sndOk(); toast('📖 已登记！今日工资已满，这份朗读算加练 💪'); }
+  else { sndCoin(); toast('📖 朗读 10 分钟登记，+¥'+pay+'！'); }
+}
+function workDone(pagesKey) {
+  var w = workDay();
+  var isMath = pagesKey === 'mathPages';
+  if (isMath ? w.mathDone : w.cnDone) return;
+  var pages = w[pagesKey];
+  var amt = isMath ? w.mathPay : w.cnPay;
+  if (!pages || !amt) { toast('页数或单价还没填好哦'); return; }
+  var pay = Math.min(amt, kidRemaining());   /* 计入每日工资封顶 */
+  if (isMath) w.mathDone = true; else w.cnDone = true;
+  if (!w._pay) w._pay = {};
+  w._pay[pagesKey] = pay;
+  if (pay > 0) logScore(isMath ? 'math' : 'chinese', (isMath?'数学练习册':'语文练习册')+' '+pages+'页', pay);
+  w.log.unshift({d:todayStr(), sub:isMath?'math':'cn', pages:pages, pts:pay});
+  if (w.log.length > 60) w.log.length = 60;
+  addStar(1);
+  tickRoutineStep('我的小任务');
+  bumpWorkStreak();   /* 两科都完成时结算全勤奖 */
+  save(); renderWork(); renderWage(); renderHero(); renderMath(); renderWall();
+  if (pay === 0) { sndOk(); toast('✅ 已登记！今日工资已满 ¥'+KID_CAP+'，这份算超额努力 💪'); }
+  else { sndCoin(); toast('📕 '+(isMath?'数学':'语文')+'练习册 '+pages+' 页验收通过，+¥'+pay+'！'); }
+}
+
+/* ================= 口算（自动出题挑战 → 现在是游戏场） ================= */
 var mqDiff = 10, mq = null;
-function mqLimit() { return mqDiff===20 ? 180 : 120; }   /* 限时：10以内 2 分钟 · 20以内 3 分钟（超过不计钱） */
+function mqLimit() { if (mq && mq.mode==='revenge') return 180; return mqDiff===20 ? 180 : 120; }   /* 限时：10以内 2 分钟 · 20以内 3 分钟 · 复仇战 3 分钟 */
 function mqTierPay(secs) {   /* 2026-11-13 新规则：按用时分档，越快越多 */
   if (mqDiff === 20) return secs <= 120 ? 2 : 1.5;   /* 20以内：2分钟内 ¥2 · 2~3分钟 ¥1.5 */
   return secs <= 60 ? 1 : 0.5;                        /* 10以内：1分钟内 ¥1 · 1~2分钟 ¥0.5 */
@@ -2475,8 +2604,20 @@ function answerQuiz(v, elBtn) {
   var q = mq.qs[mq.idx];
   if (!q) { finishQuiz(); return; }        /* 防越界：最后一题答完后再点也不会崩 */
   mq.lock = true;
-  if (v === q.ans) { mq.right++; sndOk(); if (elBtn) elBtn.classList.add('ok'); }
-  else { mq.wrong++; sndBad(); if (elBtn) elBtn.classList.add('no'); }
+  if (v === q.ans) {
+    mq.right++; sndOk();
+    if (mq.mode==='revenge') q.win = true;   /* 复仇成功的题，结算时移出错题本 */
+    if (elBtn) elBtn.classList.add('ok');
+  } else {
+    mq.wrong++; sndBad();
+    if (!mq.mode) {   /* 普通模式：答错的题自动收进错题本（去重，上限 60） */
+      if (!state.wrongQs) state.wrongQs = [];
+      var k = q.a+'_'+q.op+'_'+q.b, dup = false;
+      for (var wq=0; wq<state.wrongQs.length; wq++) { if (state.wrongQs[wq].a+'_'+state.wrongQs[wq].op+'_'+state.wrongQs[wq].b === k) { dup = true; break; } }
+      if (!dup) { state.wrongQs.push({a:q.a, b:q.b, op:q.op, ans:q.ans}); if (state.wrongQs.length > 60) state.wrongQs.shift(); }
+    }
+    if (elBtn) elBtn.classList.add('no');
+  }
   mq.idx++;
   setTimeout(function(){
     mq.lock = false;
@@ -2490,56 +2631,126 @@ function finishQuiz() {
   var secs = (Date.now()-mq.start)/1000;
   var limit = mqLimit();
   var over = secs > limit;   /* 超时只算练习不计钱（含全对奖一起不发） */
-  var tierPay = over ? 0 : mqTierPay(secs);
-  var fullBonus = (!over && mq.right===10) ? (mqDiff===20 ? 2 : 1) : 0;   /* 全对奖：10以内+¥1 · 20以内+¥2 · 超时不发 */
-  var pay = Math.min(tierPay + fullBonus, kidRemaining());
+  var isRev = mq.mode === 'revenge';
+  var cleared = 0;
+  if (isRev) {   /* 复仇战：答对的题移出错题本 */
+    var wins = {};
+    for (var rq=0; rq<mq.qs.length; rq++) if (mq.qs[rq].win) wins[mq.qs[rq].a+'_'+mq.qs[rq].op+'_'+mq.qs[rq].b] = 1;
+    var before = (state.wrongQs||[]).length;
+    state.wrongQs = (state.wrongQs||[]).filter(function(q2){ return !wins[q2.a+'_'+q2.op+'_'+q2.b]; });
+    cleared = before - state.wrongQs.length;
+  }
+  var pay;
+  if (isRev) pay = over ? 0 : Math.min(mq.right===10 ? 2 : 1, kidRemaining());   /* 复仇战：全对 ¥2 · 完成 ¥1 */
+  else {
+    var tierPay = over ? 0 : mqTierPay(secs);
+    var fullBonus = (!over && mq.right===10) ? (mqDiff===20 ? 2 : 1) : 0;
+    pay = Math.min(tierPay + fullBonus, kidRemaining());
+  }
   mq.pay = pay; mq.secs = secs;
-  state.math.unshift({d:todayStr(), n:10, r:mq.right, w:mq.wrong, s:secs, pay:pay});
+  state.math.unshift({d:todayStr(), n:10, r:mq.right, w:mq.wrong, s:secs, pay:pay, rev:isRev});
   if (state.math.length > 30) state.math.length = 30;
-  if (pay > 0) logScore('math', mqDiff===20 ? '口算20进阶' : '口算10以内', pay);
+  if (pay > 0) logScore('math', isRev ? '⚔️错题复仇' : (mqDiff===20 ? '口算20进阶' : '口算10以内'), pay);
   addStar(1);
-  save(); renderMath(); renderQuiz(); renderWage();
+  save(); renderMath(); renderQuiz(); renderWage(); renderRevenge();
+  if (isRev) {
+    if (over) { sndOk(); toast('⏱️ 复仇战超时——错题还在错题本里，练熟了再来报仇！'); }
+    else if (mq.right===10) { sndLevel(); toast('⚔️ 复仇成功！10 题全对 +¥'+pay+'，'+cleared+' 道错题被你打败啦！'); }
+    else { sndCoin(); toast('⚔️ 复仇战答对 '+mq.right+'/10，+¥'+pay+'，'+cleared+' 道错题移出错题本！'); }
+    return;
+  }
   if (over) { sndOk(); toast('⏱️ 用了 '+Math.round(secs)+' 秒（超过 '+Math.round(limit/60)+' 分钟不计钱）——这次算练习，再来一次一定更快！'); }
   else if (pay === 0) { sndOk(); toast('📝 答对 '+mq.right+'/10！今日工资已满，这场算免费加练 💪'); }
   else if (mq.right===10) { sndCoin(); toast('🏆 全对！用时 '+Math.round(secs)+' 秒，'+mqDiff+' 以内口算赚了 ¥'+pay+'，太厉害了！'); }
   else toast('📝 答对 '+mq.right+'/10 · 用时 '+Math.round(secs)+' 秒 · 赚了 ¥'+pay+'，明天再战 💪');
 }
+function renderRevenge() {   /* 错题本入口：常驻显示，攒够 5 题开复仇战 */
+  var el = document.getElementById('revengeBox');
+  if (!el) return;
+  var n = (state.wrongQs||[]).length;
+  var ready = n >= 5;
+  el.innerHTML = '<div class="pk-line" style="background:'+(ready?'#fdf3f2':'#f6f8fa')+';color:'+(ready?'#c0392b':'#5a6b7d')+';margin-top:10px">'
+    + '🧮 <b>错题本：'+n+' 题</b>（口算游戏里答错的题自动收进来，同样的错不重复收）<br>'
+    + '<span style="font-weight:normal;font-size:11.5px;'+(ready?'color:#9b4a42':'')+'">⚔️ 复仇战：重做错题 · 全对 +¥2 · 完成 +¥1 · 答对的题移出错题本 · 限时 3 分钟</span>'
+    + (ready
+        ? '<button class="btn btn-blue" style="margin-top:8px;padding:10px;font-size:14px" onclick="startRevenge()">⚔️ 开始复仇战</button>'
+        : '<button class="btn btn-gray" style="margin-top:8px;padding:10px;font-size:14px" onclick="toast(\'错题还差 '+(5-n)+' 题（现在 '+n+' 题），去游戏场答错几道就有了 😄\')">🔒 攒够 5 题开战（还差 '+(5-n)+' 题）</button>')
+    + '</div>';
+}
+function startRevenge() {
+  var wq = (state.wrongQs||[]).slice();
+  if (wq.length < 5) { toast('错题才 '+wq.length+' 题，攒够 5 题再开战'); return; }
+  var qs = [];
+  for (var i=0; i<10 && wq.length; i++) {
+    var q = wq.splice(Math.floor(Math.random()*wq.length), 1)[0];
+    var opts = [q.ans], cand = [q.ans+1, q.ans-1, q.ans+2, q.ans-2];
+    for (var c=0; c<cand.length && opts.length<3; c++) { if (cand[c] >= 0 && opts.indexOf(cand[c]) < 0) opts.push(cand[c]); }
+    opts.sort(function(){ return Math.random()-0.5; });
+    qs.push({a:q.a, b:q.b, op:q.op, ans:q.ans, opts:opts});
+  }
+  mq = {qs:qs, idx:0, right:0, wrong:0, start:Date.now(), done:false, lock:false, pay:0, mode:'revenge'};
+  if (mqTimer) clearInterval(mqTimer);
+  mqTimer = setInterval(function(){
+    if (!mq || mq.done) return;
+    var left = mqLimit() - Math.round((Date.now()-mq.start)/1000);
+    var el = document.getElementById('mqTimer');
+    if (el) el.textContent = left >= 0 ? left+' 秒' : '已超时';
+    if (left < -1) { finishQuiz(); }
+  }, 1000);
+  renderQuiz();
+  toast('⚔️ 复仇战开始！这些题上次打败过你，这次赢回来！');
+}
 function renderMath() {
   var t = todayStr();
   var today = [], past = [];
   for (var i=0;i<state.math.length;i++) { if (state.math[i].d===t) today.push(state.math[i]); else past.push(state.math[i]); }
-  /* 今日汇总 */
   var tp = 0, tfull = 0, tbest = null;
   for (var j=0;j<today.length;j++) {
     tp += (today[j].pay||0);
     if (today[j].w===0) tfull++;
     if (today[j].w===0 && (tbest===null || today[j].s < tbest)) tbest = today[j].s;
   }
+  /* 今日汇总：数学练习册 + 口算游戏 */
+  var wk = (state.work && state.work.date===t) ? state.work : null;
+  var wStat = wk
+    ? '📕 数学练习册 '+(wk.mathDone?'✅ 已验收':'⬜ 待写')+' '+wk.mathPages+' 页'+(wk.mathDone?'（¥'+((wk._pay&&wk._pay.mathPages)||0)+'）':'')
+    : '📕 数学练习册 ⬜ 5 页';
   document.getElementById('mqToday').innerHTML =
-    '<div class="mq-prog">'+(today.length
+    '<div class="mq-prog">📐 '+wStat+'（语文练习册在 📖 语文页打卡）</div>'
+    + '<div class="mq-prog">🎮 口算游戏：'+(today.length
       ? '今日 '+today.length+' 场 · 赚 ¥'+tp+' · 全对 '+tfull+' 场'+(tbest!==null?' · 今日最快 '+tbest.toFixed(1)+' 秒':'')
-      : '今天还没练，开始第一场吧 🔢')+'</div>'
-    + '<div class="mq-prog">⏱️ 10 以内限时 2 分钟（1 分钟内 ¥1 · 1~2 分钟 ¥0.5 · 全对 +¥1）· 20 以内限时 3 分钟（2 分钟内 ¥2 · 2~3 分钟 ¥1.5 · 全对 +¥2）</div>';
+      : '今天还没玩')+'</div>'
+    + '<div class="mq-prog">⏱️ 游戏：10 以内 2 分钟（1 分钟内 ¥1 · 全对 +¥1）· 20 以内 3 分钟（2 分钟内 ¥2 · 全对 +¥2）</div>';
   /* 全对最好成绩（不限今天） */
   var best = null;
   for (var k2=0;k2<state.math.length;k2++) {
     if (state.math[k2].w===0 && (best===null || state.math[k2].s < best.s)) best = state.math[k2];
   }
   document.getElementById('tmBest').innerHTML = best
-    ? '🏆 全对最好成绩：'+best.s.toFixed(1)+' 秒（'+best.d+'，'+best.n+' 题）—— 打破它！'
-    : '🏆 全对最好成绩：还没有，等你来创造！';
-  /* 历史列表：今天排最前，其余按时间倒序，最多 30 场 */
+    ? '🏆 口算游戏全对最好成绩：'+best.s.toFixed(1)+' 秒（'+best.d+'，'+best.n+' 题）—— 打破它！'
+    : '🏆 口算游戏全对最好成绩：还没有，等你来创造！';
+  /* 记录：练习册在前，口算游戏在后（各自倒序） */
   var html = '';
+  var wlog = (state.work && state.work.log) || [];
+  if (wlog.length) {
+    for (var wl=0; wl<wlog.length && wl<15; wl++) {
+      var L = wlog[wl];
+      var what = L.sub==='math' ? '📕 数学练习册 '+L.pages+' 页' : (L.sub==='read' ? '📖 朗读 '+L.pages : '📗 语文练习册 '+L.pages+' 页');
+      html += '<div class="rec"><span class="d">📅 '+(L.d===t?'今天':L.d.slice(5))+'</span>'
+        + '<span>'+what+'</span>'
+        + '<span class="s">'+(L.pts>0?'💰¥'+L.pts:'—')+'</span></div>';
+    }
+  }
   var list = today.concat(past);
-  for (var k=0;k<list.length;k++) {
+  for (var k=0;k<list.length && k<15;k++) {
     var r = list[k];
     var dLabel = (r.d===t) ? '今天' : r.d.slice(5);
     html += '<div class="rec"><span class="d">📅 '+dLabel+'</span>'
-      + '<span>✅ '+r.r+'/'+r.n+' &nbsp;❌ '+r.w+'</span>'
+      + '<span>'+(r.rev?'⚔️ 复仇战':'🎮 口算')+' ✅ '+r.r+'/'+r.n+' &nbsp;❌ '+r.w+'</span>'
       + '<span class="s">⏱️ '+r.s.toFixed(1)+'s</span>'
       + '<span>'+(r.pay?'💰¥'+r.pay:'—')+'</span></div>';
   }
-  document.getElementById('tmList').innerHTML = html || '<div class="empty-tip">还没有记录，今晚来第一战吧 🔢</div>';
+  document.getElementById('tmList').innerHTML = html || '<div class="empty-tip">还没有记录：白天写练习册，晚上来登记 💪</div>';
 }
 
 /* ================= 周目标 ================= */
@@ -2789,7 +3000,7 @@ function weekTotal() {   /* 本周全部收入（含识字/礼物/英语/家长�
 }
 function weekKidTotal() {   /* 本周孩子自己赚的部分（不含家长打卡） */
   var s = weekPoints();
-  return (s.task||0)+(s.train||0)+(s.math||0)+(s.wall||0)+(s.gift||0)+(s.eng||0);
+  return (s.task||0)+(s.train||0)+(s.math||0)+(s.chinese||0)+(s.wall||0)+(s.gift||0)+(s.eng||0);
 }
 function updateScoreCard() {
   var sum = weekPoints();
@@ -2797,7 +3008,7 @@ function updateScoreCard() {
   var sl = document.getElementById('wkScore');
   if (sl) sl.innerHTML = '本周全家已赚：<b>¥'+total+'</b>';
   var sd = document.getElementById('wkDetail');
-  if (sd) sd.innerHTML = '✏️ 任务 ¥'+(sum.task||0)+' · 🚂 小火车 ¥'+(sum.train||0)+' · 🔢 口算 ¥'+(sum.math||0)+' · 🏰 识字 ¥'+(sum.wall||0)+' · 🗣️ 英语 ¥'+(sum.eng||0)+' · 🎁 礼物 ¥'+(sum.gift||0)+' · 👨‍💻 家长 ¥'+(sum.parent||0);
+  if (sd) sd.innerHTML = '✏️ 任务 ¥'+(sum.task||0)+' · 🚂 小火车 ¥'+(sum.train||0)+' · 📐 数学 ¥'+(sum.math||0)+' · 📗 语文 ¥'+(sum.chinese||0)+' · 🏰 识字 ¥'+(sum.wall||0)+' · 🗣️ 英语 ¥'+(sum.eng||0)+' · 🎁 礼物 ¥'+(sum.gift||0)+' · 👨‍💻 家长 ¥'+(sum.parent||0);
   var pk = document.getElementById('wkPK');
   if (pk) {
     var kid = weekKidTotal();
@@ -2927,7 +3138,7 @@ function openPay() {
   var pct = Math.min(100, Math.round(state.extra.total/goal*100));
   document.getElementById('payBody').innerHTML =
     '<div class="score-line">本周全家工资：<b>¥'+total+'</b></div>'
-    + '<div class="score-detail">✏️ 任务 ¥'+(sum.task||0)+' · 🚂 小火车 ¥'+(sum.train||0)+' · 🔢 口算 ¥'+(sum.math||0)+' · 🏰 识字 ¥'+(sum.wall||0)+' · 🗣️ 英语 ¥'+(sum.eng||0)+' · 🎁 礼物 ¥'+(sum.gift||0)+' · 👨‍💻 家长 ¥'+(sum.parent||0)+'</div>'
+    + '<div class="score-detail">✏️ 任务 ¥'+(sum.task||0)+' · 🚂 小火车 ¥'+(sum.train||0)+' · 📐 数学 ¥'+(sum.math||0)+' · 📗 语文 ¥'+(sum.chinese||0)+' · 🏰 识字 ¥'+(sum.wall||0)+' · 🗣️ 英语 ¥'+(sum.eng||0)+' · 🎁 礼物 ¥'+(sum.gift||0)+' · 👨‍💻 家长 ¥'+(sum.parent||0)+'</div>'
     + '<div class="sub" style="text-align:center;margin:-2px 0 6px">👆 上面各项相加 = 本周全家工资 ¥'+total+'</div>'
     + '<div class="pk-line" style="background:#fff3dd; color:#c76b00;">⭐ 本周星星 '+stars+' 颗 · 存钱罐累计 ¥'+state.extra.total+'（'+pct+'%）</div>'
     + '<p style="font-size:13px; line-height:1.9; color:#4a5a6b; margin-top:12px;">'
@@ -2943,6 +3154,69 @@ function payDone() {
 }
 function closePay(){ document.getElementById('payMask').classList.remove('show'); }
 
+/* ================= 练习册拍照存档（纯本地，不联网） ================= */
+var photoCurSub = 'math';
+function renderPhotos() {   /* 照片墙：数学页/语文页各自显示本科照片 */
+  var ph = state.photos || [];
+  var boxes = [['math','photoMath','📐 数学练习册'],['cn','photoCn','📗 语文练习册']];
+  for (var i=0;i<boxes.length;i++) {
+    var el = document.getElementById(boxes[i][1]);
+    if (!el) continue;
+    var mine = [];
+    for (var j=0;j<ph.length;j++) if (ph[j].sub===boxes[i][0]) mine.push(j);
+    var html = '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">'
+      + '<button class="btn btn-blue" style="margin:0;padding:9px 14px;font-size:13px;width:auto" onclick="pickPhoto(\''+boxes[i][0]+'\')">📸 拍照存档</button>';
+    for (var m=0; m<mine.length && m<12; m++) {
+      html += '<img src="'+ph[mine[m]].data+'" style="width:54px;height:54px;object-fit:cover;border-radius:9px;border:2px solid #e3eaf3;cursor:pointer" onclick="viewPhoto('+mine[m]+')">';
+    }
+    if (mine.length > 12) html += '<span style="font-size:11px;color:#8a97a6">+'+(mine.length-12)+' 张</span>';
+    html += '</div><div class="sub" style="margin:4px 0 0">写完拍一张留档（'+boxes[i][2]+'已存 '+mine.length+' 张）——期末翻翻照片墙，看看写了多少 💪</div>';
+    el.innerHTML = html;
+  }
+}
+function pickPhoto(sub) { photoCurSub = sub; var f = document.getElementById('photoFile'); f.value = ''; f.click(); }
+function onPhotoFile(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var img = new Image();
+  var url = URL.createObjectURL(file);
+  img.onload = function() {
+    try {
+      var maxW = 900, sc = Math.min(1, maxW/img.width);
+      var cv = document.createElement('canvas');
+      cv.width = Math.round(img.width*sc); cv.height = Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      var data = cv.toDataURL('image/jpeg', 0.55);
+      URL.revokeObjectURL(url);
+      if (data.length > 500000) { toast('照片压缩后还是太大，试着拍小一点/近一点 😅'); return; }
+      if (!state.photos) state.photos = [];
+      state.photos.unshift({d: todayStr(), sub: photoCurSub, data: data});
+      if (state.photos.length > 40) state.photos.length = 40;   /* 容量保护：最多 40 张 */
+      save(); renderPhotos();
+      sndOk();
+      toast('📸 已存档！照片墙 +1');
+    } catch(e) { toast('这张照片处理失败，换一张试试 😅'); }
+  };
+  img.onerror = function(){ URL.revokeObjectURL(url); toast('照片读取失败'); };
+  img.src = url;
+}
+function viewPhoto(i) {
+  var p = (state.photos||[])[i];
+  if (!p) return;
+  document.getElementById('photoViewImg').src = p.data;
+  document.getElementById('photoViewImg')._i = i;
+  document.getElementById('photoViewCap').textContent = (p.sub==='math'?'📐 数学':'📗 语文')+'练习册 · '+(p.d===todayStr()?'今天':p.d);
+  document.getElementById('photoMask').classList.add('show');
+}
+function delPhoto() {
+  var img = document.getElementById('photoViewImg');
+  if (img._i == null) return;
+  state.photos.splice(img._i, 1);
+  save(); renderPhotos();
+  document.getElementById('photoMask').classList.remove('show');
+  toast('照片已删除');
+}
+
 /* ================= 家长弹窗 & 备份 ================= */
 function openParent(){ document.getElementById('parentMask').classList.add('show'); renderWriteCheck(); }
 function closeParent(){ document.getElementById('parentMask').classList.remove('show'); }
@@ -2953,7 +3227,7 @@ function applyRestore(s) {   /* 统一的恢复入口：桌面文本框备份 / 
   if (!s.math) s.math = [];
   state = s;
   rollover(); save();   /* 补齐新增字段 + 换天清理，避免导入旧备份后状态错乱 */
-  renderRoutine(); renderTask(); renderWall(); renderMath(); renderQuiz(); renderEngPage(); renderWeek(); renderEgg();
+  renderRoutine(); renderTask(); renderWall(); renderWork(); renderPhotos(); renderRevenge(); renderMath(); renderQuiz(); renderEngPage(); renderWeek(); renderEgg();
   closeParent();
   toast('✅ 数据已恢复，存钱罐 ¥'+(state.extra.total||0)+' 回来啦');
 }
@@ -3033,7 +3307,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   var week = ['日','一','二','三','四','五','六'];
   document.getElementById('hDate').textContent =
     d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日 · 星期'+week[d.getDay()];
-  renderRoutine(); renderTask(); renderWall(); renderMath(); renderQuiz(); renderEngPage(); renderWeek();
+  renderRoutine(); renderTask(); renderWall(); renderWork(); renderPhotos(); renderRevenge(); renderMath(); renderQuiz(); renderEngPage(); renderWeek();
   renderEgg();
 })();
 </script>
