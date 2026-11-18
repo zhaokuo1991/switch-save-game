@@ -758,7 +758,7 @@
 
 <script>
 /* ================= 状态 ================= */
-var LS = 'kidsStudyKit.v1';
+var LS = 'kidsStudyKit.v1', LS_BAK = 'kidsStudyKit.bak';   /* 滚动备份键：防止主档损坏/写爆后全丢 */
 /* 每天的流程按星期动态生成：有课的日子自动出现课程卡片 */
 function stepsForToday(k) {
   var s = [];
@@ -974,16 +974,32 @@ function load() {
     var s = JSON.parse(localStorage.getItem(LS));
     if (s && s.routine) return s;
   } catch(e) {}
+  try {   /* 主档读不出 → 试滚动备份（照片写爆 quota 或主档损坏时的救命稻草） */
+    var b = JSON.parse(localStorage.getItem(LS_BAK));
+    if (b && b.routine) {
+      setTimeout(function(){ toast('⚠️ 主存档读不出来，已用最近一次备份恢复。照片可能少了，钱和贴纸都在'); }, 800);
+      return b;
+    }
+  } catch(e) {}
   return defState();
 }
-var saveWarned = false;
+var saveWarned = false, saveCount = 0;
 function save() {   /* iPad Safari 无痕模式会抛异常：兜住，别让整页卡死 */
   try {
     localStorage.setItem(LS, JSON.stringify(state));
+    saveCount++;
+    if (saveCount % 8 === 0) {   /* 每 8 次保存写一份滚动备份（独立键，主档写爆时它可能是旧的但至少有总金额） */
+      try { localStorage.setItem(LS_BAK, JSON.stringify(state)); } catch(e) {}
+    }
   } catch(e) {
     if (!saveWarned) {
       saveWarned = true;
       toast('⚠️ 这台设备存不了数据（无痕模式或空间已满），请先关闭无痕再玩，否则关页面就丢了');
+      /* 写爆 quota：照片是最大头，主动丢最旧的照片腾地方，钱才存得进去 */
+      try {
+        var photos = state.photos || [];
+        while (photos.length > 4) { photos.pop(); try { localStorage.setItem(LS, JSON.stringify(state)); saveWarned = false; break; } catch(e2) { break; } }
+      } catch(e2) {}
     }
   }
 }
@@ -3186,12 +3202,12 @@ function onPhotoFile(input) {
       var cv = document.createElement('canvas');
       cv.width = Math.round(img.width*sc); cv.height = Math.round(img.height*sc);
       cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      var data = cv.toDataURL('image/jpeg', 0.55);
+      var data = cv.toDataURL('image/jpeg', 0.5);
       URL.revokeObjectURL(url);
-      if (data.length > 500000) { toast('照片压缩后还是太大，试着拍小一点/近一点 😅'); return; }
+      if (data.length > 300000) { toast('照片压缩后还是太大，试着拍小一点/近一点 😅'); return; }
       if (!state.photos) state.photos = [];
       state.photos.unshift({d: todayStr(), sub: photoCurSub, data: data});
-      if (state.photos.length > 40) state.photos.length = 40;   /* 容量保护：最多 40 张 */
+      if (state.photos.length > 10) state.photos.length = 10;   /* 容量保护：最多 10 张（Safari 本地存储总共只有 ~5MB，照片是最大头） */
       save(); renderPhotos();
       sndOk();
       toast('📸 已存档！照片墙 +1');
