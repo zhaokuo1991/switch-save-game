@@ -681,6 +681,16 @@
     <button class="btn btn-gray" onclick="exportData()">导出到文本框（电脑上复制粘贴用）</button>
     <textarea id="bakArea" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="点导出后数据出现在这里（全选复制保存）；恢复时把备份粘贴进来，再点下面的按钮"></textarea>
     <button class="btn btn-gray" onclick="importData()">从上面文本框恢复数据</button>
+
+    <h3>💰 存钱罐余额调整（补记 / 改错账专用）</h3>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin:6px 0">
+      <span style="font-size:13px; color:#5a6b7d">当前罐里 ¥<b id="adjCur">0</b></span>
+      <input type="number" id="adjAmt" inputmode="numeric" placeholder="金额" style="width:90px; border:1px solid #d7e0ec; border-radius:8px; padding:8px; font-size:15px; text-align:center">
+      <button class="btn btn-blue" style="flex:none; margin:0; min-height:40px" onclick="adjustMoney(1)">➕ 补上</button>
+      <button class="btn btn-gray" style="flex:none; margin:0; min-height:40px" onclick="adjustMoney(-1)">➖ 扣回</button>
+    </div>
+    <p style="color:#98a6b5; font-size:12px">补记/扣回都会在当天收入明细里留一笔「🛠 家长调整」，孩子看得见，账目透明。</p>
+
     <p style="margin-top:10px; color:#98a6b5">所有数据只保存在本机浏览器里，不上传任何服务器。</p>
   </div>
 </div>
@@ -3234,7 +3244,32 @@ function delPhoto() {
 }
 
 /* ================= 家长弹窗 & 备份 ================= */
-function openParent(){ document.getElementById('parentMask').classList.add('show'); renderWriteCheck(); }
+function openParent(){ document.getElementById('parentMask').classList.add('show'); renderWriteCheck(); renderAdj(); }
+function renderAdj() {   /* 余额调整行显示当前金额 */
+  var el = document.getElementById('adjCur');
+  if (el) el.textContent = state.extra.total || 0;
+}
+function adjustMoney(sign) {   /* 家长补记 / 扣回：写进当天明细（cat=adjust），账目透明 */
+  var inp = document.getElementById('adjAmt');
+  var n = parseFloat(inp && inp.value);
+  if (isNaN(n) || n === 0) { toast('先输入一个金额'); return; }
+  n = Math.round(Math.abs(n) * 100) / 100;
+  if (sign > 0) {
+    logScore('adjust', '🛠 家长补记', n);
+    toast('💰 已补记 ¥'+n+'，罐里现在 ¥'+state.extra.total+'（明细里有记录）');
+  } else {
+    var back = Math.min(n, state.extra.total || 0);
+    state.extra.total = Math.max(0, Math.round(((state.extra.total||0) - back) * 100) / 100);
+    state.scores.push({d: todayStr(), cat:'adjust', label:'🛠 家长扣回', pts: -back});
+    save();
+    checkAchievements();
+    renderWage(); renderWeek(); updateSwitchCard();
+    toast('➖ 已扣回 ¥'+back+'，罐里现在 ¥'+state.extra.total+'（明细里有记录）');
+  }
+  renderAdj();
+  inp.value = '';
+  sndCoin();
+}
 function closeParent(){ document.getElementById('parentMask').classList.remove('show'); }
 function exportData(){ document.getElementById('bakArea').value = JSON.stringify(state); toast('已导出到文本框，全选复制保存即可'); }
 function applyRestore(s) {   /* 统一的恢复入口：桌面文本框备份 / iPad 文件备份都用它 */
